@@ -1,0 +1,6 @@
+git+https://github.com/MichalPospech/Bioinformatic-data-collector.git@setup
+requests
+pandas
+jupyterlab
+jsonpath-ng
+bioservices

@@ -127,7 +127,6 @@ if __name__ == "__main__":
                     RC.Feature.REACTION_SIDE,
                     RC.Feature.CHEBI,
                     RC.Feature.SMILES,
-                    #RC.Feature.COFACTOR,
                 ]
             ),
             RC.RheaSearchFilter(reactions=rs),

@@ -1,0 +1,282 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(ggridges)
+library(stringr)
+library(tidyr)
+library(svglite)
+library(tidyverse)
+
+```
+
+Reading the CYPsdb file
+
+```{r}
+db_file <- "reactionsfromjson.csv"
+db_df <- data.frame(read.csv(db_file, header = T, sep = ","))
+colnames(db_df)
+```
+
+
+```{r}
+# keep only selected columns and keep distinct entries
+cyps_df <- db_df %>%
+  select(
+    "protein", "name", "sequence", "length", "organism_name",
+    "kingdom_name", "Product.CHEBI.ID", "products", "pfam"
+  ) %>%
+  distinct()
+# run colnames(db_df) to see actual column names
+
+# renaming the columns
+colnames(cyps_df) <- c("ID", "name", "sequence", "length", 
+"specie", "kingdom", "product_chebi_id", "product_name", "pfam")
+```
+
+## Analysis of products
+```{r}
+# making table of product and ChEBI ID
+product_df <- db_df %>%
+  select(products, Product.CHEBI.ID)
+colnames(product_df) <- c("product_name", "product_chebi_id")
+product_counts <- data.frame(sort(table(product_df$product_chebi_id)))
+colnames(product_counts) <- c("product_chebi_id", "count")
+print(product_counts)
+# the most common product is an alcohol (CHEBI_ID 30879), second most common is 15-oxo-ETE(1−)(chebi id 57410)... 
+
+# Make a graph of most common products
+
+# select only 10 most common products
+top_10_products <- product_counts %>% 
+  filter(count > 1 & count < 500) %>% 
+  arrange(desc(count)) %>% 
+  head(10)
+
+print(top_10_products)
+ggplot(data=top_10_products, aes(x=product_chebi_id, y=count)) +
+  geom_bar(stat="identity", fill="#0df5af")+
+  labs(title = "10 Most Common Products", x = "Product ChEBI ID", y = "Count")
+
+```
+
+```{r}
+# making table of substrate and ChEBI ID
+substrate_df <- db_df %>%
+  select(substrates, Substrate.CHEBI.ID)
+colnames(substrate_df) <- c("substarte_name", "substrate_chebi_id")
+substrate_counts <- data.frame(sort(table(substrate_df$substrate_chebi_id)))
+colnames(substrate_counts) <- c("substrate_chebi_id", "countS")
+print(substrate_counts)
+# the most common substrate is arachidonate (ChEBI ID 32395), second most common is an organic molecule (ChEBI ID 142491... 
+
+# Make a graph of most common products
+
+# select only 10 most common products
+top_10_subs <- substrate_counts %>% 
+  filter(countS > 1 & countS < 500) %>% 
+  arrange(desc(countS)) %>% 
+  head(10)
+
+#print(top_10_subs)
+#colnames(top_10_subs)
+ggplot(data=top_10_subs, aes(x=substrate_chebi_id, y=countS)) +
+  geom_bar(stat="identity", fill="#0df5af")+
+  labs(title = "10 Most Common Substrates", x = "Substrate ChEBI ID", y = "Count")
+```
+
+```{r}
+# joining the information about count of a product in the cyps_db to individual entries
+cyps_df <- merge(x = cyps_df, y = product_counts, by = "product_chebi_id", all.x = TRUE)
+cyps_df <- cyps_df %>%
+  select("ID", "name", "sequence", "length", "specie", "kingdom", "product_chebi_id", "product_name","pfam", "count") 
+
+```
+
+## Analysis of kingdoms
+```{r}
+kingdoms <- data.frame(sort(table(cyps_df$kingdom))) 
+colnames(kingdoms) <- c("Kingdom", "Count")
+kingdoms
+```
+
+```{r}
+ggplot(kingdoms, aes(x = Kingdom, y = Count, fill = Kingdom)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  geom_text(aes(label = Count), hjust = 0) +
+  ggtitle("CYPS db kingdoms")
+```
+
+```{r}
+ggplot(kingdoms, aes(x = "", y = Count, fill = Kingdom)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  theme_void() +
+  ggtitle("CYPS db kingdoms")
+```
+
+
+## Analysis of Lengths
+
+### All sequences
+```{r}
+summary(cyps_df$length)
+```
+
+Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  129.0   498.0   509.0   508.6   519.0  1165.0
+
+```{r}
+# function to make density ridge plot
+
+plot_lengths <- function(data, kingdoms = FALSE, kingdoms_sele = TRUE, title = "CYPS db length distribution") {
+  # if only basic organism kingdoms are wanted, we filter the data
+  if (kingdoms == TRUE & kingdoms_sele == TRUE) {
+    data <- data %>%
+      filter(kingdom == "Animalia" | kingdom == "Bacteria" | kingdom == "Fungi" | kingdom == "Plantae")
+  }
+
+  # if there is less than 3 observations for given group, get those group names to make points for the observations in the plot
+  type_counts_table <- table(data$type)
+  print(type_counts_table)
+  groups <- names(type_counts_table[type_counts_table < 10])
+  print(groups)
+
+  # color pallete for basic kingdoms
+  my_colors <- c("steelblue1", "mediumorchid3", "tomato", "yellowgreen")
+  names(my_colors) <- c("Animalia", "Bacteria", "Fungi", "Plantae")
+
+  # if we do not want to plot information about the kingdom
+  if (kingdoms == FALSE) {
+    p <- ggplot(data, aes(x = length, y = type, fill = "steelblue1"))
+    p <- p + geom_density_ridges(alpha = 0.6, scale = 0.8)
+    if (length(groups) > 0) {
+      p <- p + geom_point(data = subset(data, type %in% groups), aes(), shape = 21)
+      p <- p + theme_ridges()
+      p <- p + theme(legend.position = "None")
+      p <- p + ggtitle(title)
+    } else {
+      p <- p + theme_ridges()
+      p <- p + theme(legend.position = "None")
+      p <- p + ggtitle(title)
+    }
+    p
+    # geom_point(data=subset(data, type %in% groups), aes(),shape=21) +
+    # theme_ridges() +
+    # theme(legend.position  = "None") +
+    # ggtitle(title)
+
+    # if we want to plot information about the kingdom
+  } else if (kingdoms == TRUE) {
+    # if we look only at the basic kingdoms
+    if (kingdoms_sele == TRUE) {
+      p <- ggplot(data, aes(x = length, y = type, fill = kingdom))
+      p <- p + geom_density_ridges(alpha = 0.6, scale = 0.8)
+      p <- p + geom_point(data = subset(data, type %in% groups), aes(), shape = 21)
+      p <- p + theme_ridges()
+      p <- p + theme(legend.position = "bottom")
+      p <- p + scale_fill_manual(name = "kingdom", values = my_colors)
+      # scale_color_manual(values=my_colors)+
+      p <- p + ggtitle(title)
+    } else {
+      # if we look at all kingdoms
+      p <- ggplot(data, aes(x = length, y = type, fill = kingdom))
+      p <- p + geom_density_ridges(alpha = 0.6, scale = 0.8)
+      p <- p + geom_point(data = subset(data, type %in% groups), aes(), shape = 21)
+      p <- p + theme_ridges()
+      p <- p + theme(legend.position = "bottom")
+      p <- p + ggtitle(title)
+    }
+    p
+  }
+}
+```
+
+```{r}
+ggplot(cyps_df, aes(x = length, fill = "#9a11ef")) +
+  geom_density(alpha = 0.6) +
+  theme_ridges() +
+  theme(legend.position = "None") +
+  ggtitle("CYPS db length distribution")
+```
+
+```{r}
+ggplot(cyps_df, aes(x = length, y = kingdom, fill = kingdom)) +
+  geom_density_ridges(alpha = 0.6, bandwidth = 40) +
+  theme_ridges() +
+  theme(legend.position = "None") +
+  ggtitle("CYPS db length distribution")
+ggsave("C:/Users/natyk/Počítač/bakalarka/kingdoms_length_bw40.png")
+```
+
+```{r}
+library(hrbrthemes)
+library(viridis)
+```
+```{r}
+ggplot(data=cyps_df, aes(x = length, group = kingdom, fill = kingdom)) +
+  geom_density(adjust=1.5, alpha=.4) +
+  theme_ipsum() +
+  ggtitle("CYPS db length distribution")
+ggsave("C:/Users/natyk/Počítač/bakalarka/kingdoms_length_bw40.png")
+```
+
+```{r}
+ggplot(cyps_df %>% filter(kingdom == "Plantae"), aes(x = length, fill = "steelblue", color = "darkred")) +
+  geom_density(alpha = 0.6) +
+  theme_ridges() +
+  theme(legend.position = "None") +
+  ggtitle("CYPS db length distribution for plants")
+ggsave("C:/Users/natyk/Počítač/bakalarka/plants_density.png")
+```
+
+```{r}
+ggplot(cyps_df %>% filter(kingdom == "Plantae"), aes(x = length, fill = "#ba53f2")) +
+  geom_histogram(alpha = 0.6, binwidth = 10) +
+  theme_ridges() +
+  theme(legend.position = "None") +
+  ggtitle("CYPS db plant length distribution")
+ggsave("C:/Users/natyk/Počítač/bakalarka/plant_histogram.png")
+```
+
+```{r}
+plant_short <- cyps_df %>%
+  filter(kingdom == "Plantae") %>%
+  filter(length <= 500)
+table(plant_short)
+length(unique(plant_short$ID))
+```
+
+```{r}
+pfams <- data.frame(sort(table(cyps_df$pfam))) 
+colnames(pfams) <- c("Pfam", "Count")
+pfams
+```
+
+```{r}
+ggplot(pfams, aes(x = Pfam, y = Count, fill = Pfam)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  geom_text(aes(label = Count), hjust = 0) +
+  ggtitle("CYPS db pfams")
+```
+```{r}
+ggplot(pfams, aes(x = "", y = Count, fill = Pfam)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  theme_void() +
+  ggtitle("CYPS db pfams")
+```
+
+```{r}
+ggplot(cyps_df, aes(x = length, y = pfam, fill = pfam)) +
+  geom_density_ridges(alpha = 0.6, bandwidth = 40) +
+  theme_ridges() +
+  theme(legend.position = "None") +
+  ggtitle("CYPS db pfam-length distribution")
+```

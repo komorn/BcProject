@@ -79,8 +79,6 @@ def save_data(data: pd.DataFrame, path: pathlib.Path) -> None:
 
 if __name__ == "__main__":
 
-    print("Fetching taxa")
-
     taxa = get_uniprot(
         [
             UC.Feature.ORGANISM,
@@ -90,20 +88,14 @@ if __name__ == "__main__":
     )
     save_data(taxa, pathlib.Path("taxa.csv"))
 
-    print("Fetching names")
     names = get_uniprot([UC.Feature.NAME, UC.Feature.SUBMITTED_NAME])
     save_data(names, pathlib.Path("names.csv"))
 
-    print("Fetching pfam")
     pfams = get_uniprot([UC.Feature.PFAM])
     pfams["pfam"] = pfams["pfam"].apply(
         lambda p: urllib.parse.urlparse(p).path.split("/")[2]
     )
     save_data(pfams, pathlib.Path("pfams.csv"))
-
-    print("Fetching sequences")
-    sequences = get_uniprot([UC.Feature.SEQUENCE])
-    save_data(sequences, pathlib.Path("sequences.csv"))
 
     uniprot_data = get_uniprot([UC.Feature.REACTION])
 
@@ -122,7 +114,6 @@ if __name__ == "__main__":
                     RC.Feature.REACTION_SIDE,
                     RC.Feature.CHEBI,
                     RC.Feature.SMILES,
-                    #RC.Feature.COFACTOR,
                 ]
             ),
             RC.RheaSearchFilter(reactions=rs),
@@ -139,9 +130,6 @@ if __name__ == "__main__":
         rhea_data["reaction"]
         .apply(lambda r: urllib.parse.urlparse(r).path[1:])
         .astype(str)
-    )
-    rhea_data["cofactor"] = rhea_data["cofactor"].apply(
-        lambda c: urllib.parse.urlparse(c).path.split("/")[2]
     )
     rhea_data = rhea_data.set_index("reaction", drop=True)
     rhea_data["reaction_side_order"] = rhea_data["reaction_side_order"].apply(

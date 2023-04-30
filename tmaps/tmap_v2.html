@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="data:image/vnd.microsoft.icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA25g0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAERAAAAAAAAAREAAAAAAAABEQAAAAAAAAERAAAAAAAAARERERAAAAABEREREAAAAAEREREQAAAAAREAAAAAAAABEQAAAAAAAAEREREQAAAAARERERAAAAABEREREAAAAAAAAAAAAAAAAAAAAAAAD//wAA//8AAPH/AADx/wAA8f8AAPH/AADwDwAA8A8AAPAPAADx/wAA8f8AAPAPAADwDwAA8A8AAP//AAD//wAA" />
+    <title></title>
+    <script src="https://unpkg.com/lore-engine@1.1.10/dist/lore.min.js"></script>
+    <script src="https://unpkg.com/smiles-drawer@2.1.7/dist/smiles-drawer.min.js"></script>
+    <link 
+      rel="stylesheet" 
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.2/css/all.css" 
+      integrity="sha256-piqEf7Ap7CMps8krDQsSOTZgF+MU/0MPyPW2enj5I40=" 
+      crossorigin="anonymous" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans:400,600"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
+        height: 100%;
+        user-select: none;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      #lore {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+      }
+
+      #title {
+        position: absolute;
+        z-index: 9999;
+        pointer-events: none;
+        text-height: 1;
+        opacity: 0.0;
+        transition: opacity 0.5s ease-in;
+        
+          padding-bottom: 20px;
+        
+          font-size: 1.0em;
+        
+          color: #888888;
+        
+          font-family: 'Open Sans';
+        
+      }
+
+      #x-axis {
+        position: absolute;
+        z-index: 9999;
+        pointer-events: none;
+        text-height: 1;
+        opacity: 0.0;
+        transition: opacity 0.5s ease-in;
+        
+          padding-top: 20px;
+        
+          font-size: 0.7em;
+        
+          color: #888888;
+        
+          font-family: 'Open Sans';
+        
+      }
+
+      #y-axis {
+        position: absolute;
+        z-index: 9999;
+        pointer-events: none;
+        text-height: 1;
+        transition: opacity 0.5s ease-in;
+        
+          padding-bottom: 20px;
+        
+          font-size: 0.7em;
+        
+          color: #888888;
+        
+          font-family: 'Open Sans';
+        
+          transform: rotate(-90deg);
+        
+      }
+
+      #tip {
+        position: absolute;
+        z-index: 9999;
+        left: 10px;
+        top: 10px;
+        padding: 5px;
+        font-family: 'Open Sans';
+        background-color: rgba(255, 255, 255, 1.0);
+        border-radius: 2px;
+        border-left: 5px solid #000;
+        pointer-events: none;
+        opacity: 0.0;
+        transition: opacity 0.1s ease-out;
+        filter: drop-shadow(0px 0px 10px rgba(0, 0, 0, 1.0));
+      }
+
+      #tip.show {
+        opacity: 1.0;
+        transition: opacity 0.1s ease-out;
+      }
+
+      #tip-text {
+        position: relative;
+        
+        max-width: 250px;
+        
+        font-size: 0.8em;
+        font-weight: bold;
+        white-space: normal;
+        line-break: normal;
+      }
+
+      #hover-indicator {
+        display: none;
+        position: absolute;
+        z-index: 999;
+        border: 1px solid #fff;
+        background-color: rgba(255, 255, 255, 0.25);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      #hover-indicator.show {
+        display: block !important
+      }
+
+      .selected-indicator {
+        position: absolute;
+        z-index: 999;
+        pointer-events: none;
+      }
+
+      .selected-indicator .crosshair-x {
+        position: absolute;
+        top: 0; left: 0; bottom: 0; right: 0;
+        height: 2px;
+        width: 100%;
+        margin: auto;
+        
+          background-color: #fff;
+        
+      }
+
+      .selected-indicator .crosshair-y {
+        position: absolute;
+        top: 0; left: 0; bottom: 0; right: 0;
+        width: 2px;
+        height: 100%;
+        margin: auto;
+        
+          background-color: #fff;
+        
+      }
+
+      #legend {
+        position: absolute;
+        z-index: 9998;
+        
+          bottom: 10px;
+        
+          right: 10px;
+        
+          padding: 10px;
+        
+          border: 1px solid #262626;
+        
+          border-radius: 2px;
+        
+          background-color: #111111;
+        
+          filter: drop-shadow(0px 0px 10px rgba(0, 0, 0, 0.5));
+        
+          color: #eeeeee;
+        
+          font-family: 'Open Sans';
+        
+      }
+
+      #legend .container {
+        display: flex;
+        flex: auto;
+        align-items: flex-start;
+        
+        flex-direction: column;
+        
+      }
+
+      #legend .legend-section {
+        width: 100%;
+      }
+
+      #legend .legend-section:not(:first-child) {
+        
+      }
+
+      #legend h2 {
+        font-size: 1em;
+        font-weight: 600;
+        padding-top: 0;
+        margin-top: 0;
+        margin-bottom: 5px;
+        text-align: center;
+        max-width: 250px;
+        white-space: normal;
+      }
+
+      #legend h3 {
+        font-size: 0.8em;
+        margin-top: 10px;
+        margin-bottom: 0px;
+        max-width: 250px;
+        white-space: normal;
+      }
+
+      #legend select {
+        width: 100%;
+        margin-bottom: 5px;
+        background: transparent;
+        color: #fff;
+        border-radius: 2px;
+        font-size: 0.75em;
+      }
+
+      #legend select option {
+        background: #000;
+      }
+
+      #legend .legend-element, #legend .legend-element-range {
+        position: relative;
+        display: flex;
+        flex: auto;
+        align-items: flex-start;
+        padding-bottom: 2px;
+        padding-top: 2px;
+      }
+
+      #legend .legend-element {
+        align-items: flex-start;
+      }
+
+      #legend .legend-element-range {
+        flex-direction: column;
+      }
+
+      #legend .color-box {
+        
+          width: 15px;
+        
+          height: 15px;
+        
+          border: solid 0px;
+        
+      }
+
+      #legend .color-stripe {
+        
+          width: 15px;
+        
+          height: 1px;
+        
+          border: solid 0px;
+        
+      }
+
+      #legend .legend-label {
+        height: 15px;
+        font-size: 0.7em;
+        padding-left: 5px;
+      }
+
+      #legend .legend-label.max {
+        position: absolute;
+        top: 0px;
+        margin-left: 15px;
+      }
+
+      #legend .legend-label.min {
+        position: absolute;
+        bottom: 2px;
+        margin-left: 15px;
+      }
+
+      #selected {
+        position: absolute;
+        display: none;
+        z-index: 9998;
+        width: 250px;
+        
+          bottom: 10px;
+        
+          left: 10px;
+        
+          padding: 0px;
+        
+          border: 1px solid #262626;
+        
+          border-radius: 2px;
+        
+          background-color: #111111;
+        
+          filter: drop-shadow(0px 0px 10px rgba(0, 0, 0, 0.5));
+        
+          color: #eeeeee;
+        
+          font-family: 'Open Sans';
+        
+      }
+
+      #selected #selected-controls {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 5px 10px;
+        border-bottom: 1px solid #262626;
+        font-size: 0.8em;
+        font-weight: bold;
+      }
+
+      #selected #selected-controls * {
+        display: inline-block;
+      }
+
+      #selected #selected-controls #selected-title {
+        flex-grow: 1;
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #aaa;
+      }
+
+      #selected #selected-controls a {
+        margin: 0px 2px;
+        font-size: 1.5em;
+        color: #fff;
+        opacity: 0.75;
+        transition: 0.2s;
+      }
+
+      #selected #selected-controls a:hover {
+        opacity: 1.0;
+      }
+
+      #selected #selected-controls a#selected-remove {
+        position: absolute;
+        right: 10px;
+        top: 42px;
+        color: #e74c3c;
+      }
+
+      #selected #selected-container {
+        padding: 10px;
+        font-size: 0.8em;
+      }
+
+      #selected #selected-container img {
+        margin-left: -10px;
+      }
+
+      #selected #selected-container .label {
+        font-weight: bold;
+        color: #aaa;
+        font-size: 0.7em;
+      }
+
+      #selected #selected-container .label:not(:first-child) {
+        margin-top: 2px;
+      }
+
+      #selected #selected-container .content {
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      #selected #selected-container .content a {
+        text-decoration: none;
+        color: #3498db;
+      }
+
+      #controls {
+        position: absolute;
+        z-index: 9998;
+        
+          top: 10px;
+        
+          right: 10px;
+        
+          padding: 2px;
+        
+          border: 1px solid #262626;
+        
+          border-radius: 2px;
+        
+          background-color: #111111;
+        
+          filter: drop-shadow(0px 0px 10px rgba(0, 0, 0, 0.5));
+        
+          color: #eeeeee;
+        
+          font-family: 'Open Sans';
+        
+      }
+
+      #controls a {
+        display: inline-block;
+        padding: 5px 10px;
+        font-size: 1.2em;
+        color: #fff;
+        opacity: 0.75;
+        transition: 0.2s;
+      }
+
+      #controls a:hover {
+        opacity: 1.0;
+      }
+
+      #controls #more-controls {
+        display: inline-block;
+      }
+
+      #impress {
+        position: absolute;
+        z-index: 9999;
+        top: 10px;
+        left: 10px;
+        font-size: 0.7em;
+        color: #eee;
+      }
+
+      #impress a {
+        color: #3498db;
+        text-decoration: none;
+      }
+
+      #overlay-structure-container {
+        position: absolute;
+        z-index: 9999;
+        top: 50px;
+        left: 275px;
+        right: 100px;
+        bottom: 10px;
+        opacity: .5;
+        pointer-events: none;
+      }
+
+      #overlay-structure {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: auto;
+        margin-bottom: auto;
+      }
+
+
+
+
+
+      .show {
+        opacity: 1.0 !important;
+      }
+
+      .hide {
+        display: none !important;
+      }
+
+      @media only screen and (max-width: 600px) {
+        #selected {
+          position: absolute;
+          display: none;
+          z-index: 9998;
+          width: 125px;
+          opacity: 0.8;
+          background-filter: blur(10px);
+        }
+
+        #selected img {
+          width: 125px;
+        }
+
+        #tip {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    
+    
+    
+    
+
+    <div id="overlay-structure-container" data-binding-id="overlayStructureContainer" class="">
+      <canvas id="overlay-structure" data-binding-id="overlayStructure" width="450" height="687">
+
+      </canvas></div>
+    </div>
+
+    <div id="tip" data-bind="tip">
+      <div id="tip-text" data-bind="tipText"></div>
+    </div>
+    <div id="selected" data-bind="selected">
+      <div id="selected-controls" data-bind="selectedControls">
+        <a id="selected-toggle" data-bind="selectedToggle" href="#">
+          <i class="fas fa-toggle-on"></i>
+        </a>
+        <span>&nbsp;&nbsp;</span>
+        <span id="selected-title" data-bind="selectedTitle"></span>
+        <span>&nbsp;&nbsp;</span>
+        <span id="selected-current" data-bind="selectedCurrent" data-bind="selectedCurrent">0</span><span> / </span><span id="selected-total" data-bind="selectedTotal">0</span>
+        <span>&nbsp;&nbsp;</span>
+        <a id="selected-prev" data-bind="selectedPrev" href="#">
+          <i class="fas fa-angle-left"></i>
+        </a>
+        <span>&nbsp;</span>
+        <a id="selected-next" data-bind="selectedNext" href="#">
+          <i class="fas fa-angle-right"></i>
+        </a>
+        <a id="selected-remove" data-bind="selectedRemove" href="#">
+          <i class="fas fa-times"></i>
+        </a>
+      </div>
+      <div id="selected-container" data-bind="selectedContainer">
+      </div>
+    </div>
+    <div id="controls" data-bind="controls">
+      <div id="more-controls" data-bind="moreControls" class="hide">
+        <a id="search" data-bind="search" href="#">
+          <i class="fas fa-search"></i>
+        </a>
+        <a id="download" data-bind="download" href="#">
+          <i class="fas fa-download"></i>
+        </a>
+        <a id="export" data-bind="export" href="#">
+          <i class="fas fa-camera"></i>
+        </a>
+        <a id="largepreview" data-bind="largepreview" href="#">
+          <i class="fas fa-expand"></i>
+        </a>
+      </div>
+      <a id="show-controls" data-bind="showControls" href="#">
+        <i class="fas fa-bars"></i>
+      </a>
+    </div>
+    <div id="hover-indicator" data-bind="hoverIndicator"></div>
+    <canvas id="lore"></canvas>
+
+    
+    <script>
+      const data = {
+kingdom_name: {
+x: [0.0,315.127,440.922,341.796,392.365,344.662,355.66,375.043,119.687,421.41,256.903,410.206,396.709,351.177,331.307,310.27,214.285,179.612,153.296,237.917,108.59,282.587,302.221,168.072,259.374,257.32,150.917,99.247,95.53,261.054,149.888,228.651,266.827,375.296,367.437,368.02,379.867,679.787,682.762,231.279,506.911,280.405,178.837,174.309,401.684,412.808,663.007,669.549,655.287,675.109,740.639,582.718,457.609,630.485,625.766,609.97,731.77,727.526,744.021,745.242,738.534,749.787,744.027,737.991,731.282,736.596,459.024,614.781,616.713,583.323,48.873,69.869,478.659,176.57,173.83,197.453,302.861,316.209,249.934,213.428,230.662,485.382,481.466,478.678,508.929,388.728,469.928,474.878,155.69,578.778,162.125,605.302,161.136,185.556,166.057,175.947,174.83,170.336,153.175,181.437,175.978,134.211,137.725,134.524,177.892,181.364,396.924,394.139,158.853,163.034,167.904,591.344,577.482,697.776,435.469,376.655,512.469,511.388,571.84,197.844,216.745,220.339,196.481,584.999,583.051,589.489,736.586,216.968,230.573,24.796,348.751,328.65,339.216,328.43,358.113,408.454,393.314,409.119,388.452,387.509,384.975,382.356,372.83,367.749,359.038,125.424,360.397,351.542,351.048,422.853,421.416,435.504,435.371,446.485,454.701,114.657,327.334,331.49,323.54,404.121,379.327,398.047,334.666,383.102,121.628,339.578,335.041,335.838,355.658,362.818,363.95,338.453,470.607,87.234,444.441,380.699,474.91,479.199,462.29,474.667,469.182,320.85,283.174,310.855,254.417,197.605,475.285,187.917,254.158,272.722,229.839,238.168,246.803,242.669,248.139,179.253,182.582,231.964,74.377,79.077,214.178,232.568,598.118,519.565,577.07,578.284,554.627,341.499,739.106,138.78,145.608,436.516,425.406,740.559,461.09,576.032,575.755,517.976,606.678,532.269,577.694,132.143,624.624,126.78,124.0,233.887,209.713,177.468,158.815,153.298,133.802,168.678,306.108,287.97,271.21,338.889,350.982,354.168,299.065,297.134,164.387,220.424,225.65,222.297,354.034,350.377,359.878,367.539,255.838,614.328,337.705,447.114,163.95,162.854,276.907,339.19,373.82,374.52,387.069,374.929,302.578,618.623,227.933,232.908,224.043,133.887,281.066,436.887,159.379,228.717,227.247,307.713,388.646,261.374,192.702,748.125,750.0,601.745,433.669,421.946,614.275,233.388,228.321,260.998,259.409,391.335,635.968,90.83,223.297,213.426,231.259,236.233,29.785,32.054,36.093,41.709,215.737,71.318,70.769,602.822,235.507,492.429,209.404,311.372,325.708,599.214,594.677,153.197,607.019,603.293,608.434,605.18,657.28,626.456,622.796,618.388,694.807,713.105,606.463,604.29,600.516,612.379,605.621,609.818,605.478,635.239,658.392,659.291,522.403,505.396,508.259,722.007,619.624,493.103,606.335,579.758,588.576,600.639,594.57,588.531,597.503,602.065,611.918,617.609,612.191,4.54,0.0,4.458,580.83,589.305,586.478,593.182,66.934,62.93,68.124,202.593,662.589,584.506,594.368,646.127,635.249,161.754,187.107,478.429,481.083,462.339,520.0,521.632,522.668,493.935,506.854,523.987,517.758,462.167,456.411,466.531,219.327,132.755,732.951,722.255,728.104,714.217,708.26,704.643,703.791,580.216,211.339,470.102,693.488,685.137,693.417,681.487,149.203,225.998,580.275,464.095,460.801,479.479,487.904,491.808,464.311,576.111,185.185,190.272,187.077,198.347,486.052,484.093,158.609,285.482,457.023,453.71,292.782,289.561,111.403,194.405,35.682,16.178,9.674,227.081,223.402,229.281,626.488,517.741,155.969,515.25,223.11,441.918,234.382,447.843,632.208,151.77,155.513,417.557,425.094,389.813,368.771,376.376,376.796,366.7,363.102,368.925,367.183,364.732,332.766,322.874,335.404,381.166,338.785,252.259,352.731,382.011,104.476,186.66,185.172,393.964],
+y: [750.0,341.937,105.201,529.527,348.378,336.663,335.566,331.989,475.092,132.724,175.517,576.061,570.359,519.615,540.506,342.595,362.727,499.606,80.452,222.358,127.94,101.059,217.248,96.621,420.992,423.655,323.498,137.371,139.342,428.882,76.613,58.858,112.544,1.734,4.103,0.232,0.0,494.992,498.493,61.255,507.702,104.689,185.049,188.236,149.377,131.919,473.19,482.094,463.07,489.506,155.617,250.719,417.203,392.07,393.492,367.967,213.268,214.558,382.647,350.936,352.671,349.805,378.853,367.44,354.565,370.849,601.707,458.734,455.42,551.354,322.189,330.288,318.775,496.508,500.454,372.34,35.867,29.428,119.051,100.508,128.249,13.995,15.153,24.717,502.854,164.724,46.143,34.956,346.529,253.407,429.767,148.03,425.233,392.795,426.834,395.316,425.315,457.859,464.339,484.685,489.893,473.642,470.755,468.211,561.234,557.693,274.262,271.801,401.058,399.517,397.64,528.278,369.779,271.251,100.621,243.294,493.524,497.051,357.365,377.59,354.574,349.952,368.341,123.883,127.694,122.201,177.45,577.751,399.45,334.394,11.699,21.146,17.585,24.411,7.279,513.303,509.565,508.753,351.569,346.946,301.517,327.989,334.544,361.673,333.945,475.313,388.715,473.062,415.608,582.854,586.391,592.525,588.836,594.459,598.933,130.164,466.275,459.769,471.59,510.678,508.139,565.979,454.782,509.517,479.275,440.734,536.599,452.114,508.491,506.218,509.767,445.992,58.421,142.641,240.389,242.028,192.014,194.243,215.608,197.001,205.482,475.081,424.142,433.701,414.272,173.609,58.322,395.215,179.432,115.956,45.524,217.11,197.283,206.866,193.872,107.351,104.568,77.331,148.663,146.445,103.779,125.638,147.496,358.039,350.924,373.636,362.014,191.941,167.879,300.072,311.667,252.383,270.813,160.344,302.655,357.761,364.74,360.75,259.482,373.645,563.45,290.215,128.083,282.575,278.273,220.412,359.288,427.833,366.647,368.262,358.188,490.484,207.835,43.954,53.743,195.618,509.657,408.498,224.481,228.873,94.855,405.385,404.396,401.839,259.784,262.934,254.642,248.156,63.463,201.672,208.438,88.513,491.395,750.0,118.356,212.208,545.33,540.537,550.925,532.538,207.776,203.114,26.737,28.71,30.007,123.096,188.474,103.804,87.187,31.226,19.925,197.906,325.063,433.612,510.686,387.51,392.232,172.712,254.973,270.802,136.78,581.184,578.782,167.432,171.042,321.773,117.172,340.319,533.519,534.595,532.703,532.225,287.552,292.017,299.656,309.821,162.664,319.874,324.117,202.91,398.224,316.557,363.939,430.725,750.0,300.483,300.21,326.469,201.9,197.83,198.44,173.847,303.036,427.624,428.116,396.159,266.392,329.288,232.038,267.236,339.067,300.722,300.84,263.905,263.743,297.578,293.305,299.084,396.435,345.917,400.185,341.979,399.209,331.389,492.167,559.001,544.77,509.669,525.713,540.688,528.435,146.29,472.565,450.769,476.392,354.44,356.405,359.109,113.586,127.684,130.962,125.103,335.816,338.168,340.001,535.847,302.173,255.198,259.012,451.977,440.223,315.601,551.83,412.381,409.697,416.134,450.974,434.265,416.179,405.329,403.139,452.56,454.106,75.196,73.656,76.531,574.081,286.405,188.756,217.026,201.767,233.687,249.292,251.135,316.436,257.696,555.626,413.665,269.941,289.432,302.858,288.4,369.879,14.329,107.817,296.717,299.21,315.048,314.867,311.992,58.954,109.135,168.228,168.801,179.138,169.954,3.122,7.439,319.642,105.816,225.703,227.552,94.264,98.346,349.47,544.363,327.991,341.163,347.995,596.87,587.75,601.707,124.675,467.457,343.178,481.48,573.962,285.033,155.579,598.124,121.127,117.532,115.794,131.369,117.524,168.87,251.305,186.588,190.53,211.449,212.78,488.837,492.821,498.794,338.952,340.714,203.23,190.291,201.532,65.215,411.835,340.452,125.816,96.496,100.197,167.104],
+z: [375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0],
+labels: ['*[H]','C(*C([O-])=O)C','C(=C/C(=C/CC[C@H](C)C/C=C/C=C\C)/C)\C(=C/1\C([C@@H](NC1=O)CC=2C=CC(=CC2)O)=O)\[O-]','C(=C/C(C/C=C\CCCCC)O)\C=C/C/C=C\CCCC(=O)[O-]','C(CCCCCCCC(C(=O)[O-])O)CC','C(CCCCCCCC)CCC([O-])=O','C(CCCCCCCC)CCCCC([O-])=O','C(CCCCCCCCCC)CCCCCCC(=O)[O-]','C(NC(CCNC(=O)[C@@H](C(COP(OC[C@@H](C(*)=O)N*)(=O)[O-])(C)C)O)=O)CSC(CCCCCCC*)=O','C([C@@H](/C(=N/O)/[H])C)C','C([C@@H]1[C@H](COC1=O)CC2=CC=C3OCOC3=C2)C4=CC=C(OC)C(=C4)OC','C([C@H](/C=C/C=C/C=C/[C@H](CCCC([O-])=O)O)O)/C=C\CCCCC','C([C@H](/C=C/C=C/C=C\[C@H](CCCC([O-])=O)O)O)/C=C\CCCCC=O','C(\CC(/C=C/C=C\C/C=C\CCCCC)O)=C\CCCC([O-])=O','C(\CC)=C\C/C=C\C/C=C\C/C=C\C=C\C(CCCC(=O)[O-])O','C*C([O-])=O','C/C(/C=C/C=C(/C)\C=C\C1=C(C)CCCC1(C)C)=C\C=O','C1(=C(C(=C(C(=C1Cl)C)C=O)O)C/C=C(/CC[C@@]2([C@H](C(=O)CC[C@H]2C)C)C)\C)[O-]','C1(=C(C(=C(C2=C1OC(=C(C2=O)*)C3=C(C(=C(C(=C3*)*)*)[H])*)*)*)*)*','C1(=C(C=C(C=C1)C[NH2+]CCC2=CC=C(C=C2)O)O)OC','C1(=C(C=CC2=C1C(C=3C(=CC(=CC3C2=O)C)O)=O)[O-])O','C1(=CC(=CC2=C1C(=CC(O2)=O)OC)O)C','C1(=CC=C(C=C1)*)O','C1(=O)C=C(C2=CC=C(C=C2)O)OC3=C1C([O-])=CC(=C3)OC','C1(C(CCC1=O)CC(N[C@H](C([O-])=O)*)=O)C/C=C\CC','C1(C(CCC1=O)CC(N[C@H](C([O-])=O)*)=O)C/C=C\CCO','C1(C)=CC[C@@](C=2CC(CCC2)(C)C)(CC1)[H]','C1(O)=C2C(C(C=3C(=CC=CC3O)C2=O)=O)=C(O)C4=C1C[C@](C[C@@H]4O[C@H]5C[C@@H]([C@@H]([C@@H](O5)C)O)[NH3+])(CC)O','C1(O)=C2C(C(C=3C(=CC=CC3O)C2=O)=O)=C(O)C4=C1C[C@](C[C@@H]4O[C@H]5C[C@@H]([C@@H]([C@@H](O5)C)O)[NH3+])([C@@H](C)O)O','C1([C@H](CCC1=O)CC(N[C@H](C([O-])=O)[C@H](CC)C)=O)C/C=C\CC','C12=C(C(=C(C(=C2C(C(=C(O1)*)C=3C(=C(C(=C(C3*)*)*)*)[H])=O)*)*)*)*','C12=C(C=3C(=CC(=CC3C=C1OC(CC2=O)(O)C)OC)OC)O','C12=C(C=C(OC)C(=C1O)O)C=CC(O2)=O','C12=C3C(=CC(=C2C(O[C@@H](C1)C)=O)O)O[C@@]4([C@]([C@]5(C=CC(C([C@@]5(CC4)[H])(C)C)=O)C)(C3)[H])C','C12=C3C(=CC(=C2C(O[C@@H](C1)C)=O)O)O[C@@]4([C@]([C@]5(CCC(C([C@@]5(CC4)[H])(C)C)=O)C)(C3)[H])C','C12=C3C(=CC(=C2C(O[C@@H](C1)C)=O)O)O[C@@]4([C@]([C@]5(CC[C@@H](C([C@@]5(CC4)[H])(C)C)O)C)(C3)[H])C','C12=C3C(=CC(=C2C(O[C@@H]([C@@H]1O)C)=O)O)O[C@@]4([C@]([C@]5(C=CC(C([C@@]5(CC4)[H])(C)C)=O)C)(C3)[H])C','C12C(C3C(C(CC3)*)(C)CC1)CCC4C2(CCCC4)C','C12C([C@]3(C(C(CC3)*)(C)CC1)C)CCC4C2(CCCC4)C','C1=2C(O[C@@H](CC1=O)C3=CC=C(C=C3)OC)=CC(=CC2O)OC','C1=C(C(C)C)C(=C(C2=C1C(C[C@@]3([C@@]2(CCCC3(C)C)C)[H])=O)O)O','C1=C(C=C2C=CC(OC2=C1)=O)OC','C1=C2CC[N+]3(CC4=C(C[C@]3(C2=C(C=5OCOC15)O)[H])C=CC(=C4OC)OC)C','C1=C2CC[N+]3(CC4=C([C@@H]([C@]3(C2=C(C=5OCOC15)O)[H])OC(C)=O)C=CC(=C4OC)OC)C','C1=CC=CC=2C(=CNC12)C/C=N/O','C1=CC=CC=C1C\C=N\O','C1C2C3C(CCC2(C(C1)C(CCC(C(C)C)C)C)C)C4(C(CC3)CCCC4)C','C1C2C3C(CCC2(C(C1)C(CCC(C(C)C)CC)C)C)C4(C(CC3)CCCC4)C','C1C2C3C(CCC2(C(C1)C(CCCC(C)C)C)C)C4(C(CC3)CCCC4)C','C1CCCC2C1(C3C(CC2)C4C(CC3)(C(CC4)CC)C)C','C1C[C@]2(CC[C@]1(C)O2)C(C)C','C1[C@@]2([C@@]([C@@]3(C(C[C@@H](OS([O-])(=O)=O)CC3)=C1)C)(CC[C@]4([C@]2(CCC4=O)[H])C)[H])[H]','C1[C@@]2([C@]3(CC[C@]4(C)[C@]([C@@H](C[C@]4([C@@]3(CC=C2C[C@H](C1)O)[H])[H])O)(C(=O)C)O)[H])C','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(C(C=C2C[C@H](C1)O)=O)[H])(CC[C@@]4([C@H](C)CCC[C@@H](C)C([H])=O)[H])[H])C)[H])C','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(C(C=C2C[C@H](C1)O)=O)[H])(CC[C@@]4([C@H](C)CCC[C@@H](C)CO)[H])[H])C)[H])C','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC=C2C[C@H](C1)O)[H])(CC[C@@]4([C@H](C)CCCC(C)C)[H])[H])C)[H])C','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC[C@]2(CC(C1)=O)[H])[H])(CC[C@@H]4O)[H])C)[H])C=O','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC[C@]2(CC(C1)=O)[H])[H])(CC[C@@H]4O)[H])C)[H])CO','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC[C@]2(CC(C1)=O)[H])[H])(CC[C@@]4([C@@H]([C@H]([C@@H](CC(C)C)O)O)C)[H])[H])C)[H])C','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC[C@]2(C[C@@H](C1)O)[H])[H])(CC[C@@]4([C@@H]([C@H]([C@@H](CC(C)C)O)O)C)[H])[H])C)[H])C','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC[C@]2(C[C@@H]([C@@H]1O)O)[H])[H])(CC[C@@]4([C@@H]([C@H]([C@@H](CC(C)C)O)O)C)[H])[H])C)[H])C','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC[C@]2(C[C@H](C1)O)[H])[H])(CC[C@@]4([C@@H]([C@H]([C@@H](CC(C)C)O)O)C)[H])[H])C)[H])C','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(C[C@@H]([C@]2(CC(C1)=O)[H])O)[H])(CC[C@@]4([C@@H]([C@H]([C@@H](CC(C)C)O)O)C)[H])[H])C)[H])C','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(C[C@@H]([C@]2(C[C@@H](C1)O)[H])O)[H])(CC[C@@]4([C@@H]([C@H]([C@@H](CC(C)C)O)O)C)[H])[H])C)[H])C','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(C[C@@H]([C@]2(C[C@@H]([C@@H]1O)O)[H])O)[H])(CC[C@@]4([C@@H]([C@H]([C@@H](CC(C)C)O)O)C)[H])[H])C)[H])C','C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(C[C@@H]([C@]2(C[C@H](C1)O)[H])O)[H])(CC[C@@]4([C@@H]([C@H]([C@@H](CC(C)C)O)O)C)[H])[H])C)[H])C','C1[C@H]2[C@@H]([C@H]([C@@H]1OO2)/C=C/[C@H](CCCCC)O)CCCCCCC([O-])=O','C1[C@]2([C@](/C(=C/C=C/3\C(CC[C@@H](C3)O)=C)/CC1)(CC[C@@]2([C@](C)(CC(CC(C)C)O)O)[H])[H])C','C1[C@]2([C@](/C(=C/C=C/3\C(CC[C@@H](C3)O)=C)/CC1)(CC[C@@]2([C@](C)(CCCC(C)C)O)[H])[H])C','C1[C@]2([C@](/C(=C/C=C/3\C([C@H](C[C@@H](C3)O)O)=C)/CC1)(CC[C@@]2([C@H](C)/C=C/[C@@H](C(C)C)C)[H])[H])C','C1[C@]2([C@](CC=C(C1)C)(C(CC2)=C(C)C)[H])C','C1[C@]2([C@](CC=C(C1)C)(\C(\CC2)=C(/C)\C(=O)[O-])[H])C','C1[C@]2([C@](C[C@@]3([C@@]1([C@H](CC3)C(C)C)[H])C)([C@H](CC[C@]45[C@@]2([C@@]5(CC[C@@H]4C)[H])C)C)[H])O','C=1(C(=C(C(=C(C1Cl)C)C=O)O)C/C=C(/CC/C=C(/CCC=C(C)C)\C)\C)[O-]','C=1(C(=C(C(=C(C1Cl)C)C=O)O)C/C=C(/CC/C=C(/CC[C@H]2C(C)(C)O2)\C)\C)[O-]','C=1(C(CC[C@@H](C1C)O)(C)C)/C=C/C(=C/C=C/C(=C/C([O-])=O)/C)/C','C=1(C=C(C(=C(C1C)C)C(=O)[O-])O)O','C=1(C=C(C(=C(C1C)CO)C(=O)[O-])O)O','C=1(C=CC=C(C1O)OC)O','C=1(C=CC=CC1C)OC','C=1(C=CC=CC1OCC)O','C=1(C[C@@]2([C@]3([NH+](CCC2)CC[C@@]43C5=C(NC41)C=CC=C5)[H])CC)C(=O)OC','C=1(C[C@]2([C@@]3([NH+](CCC2)CC[C@]43C5=C(NC41)C=CC=C5)[H])CC)C(=O)OC','C=1(C[C@]2([C@@]3([NH+](C[C@H]4[C@@H]2O4)CC[C@]53C6=C(NC51)C=CC=C6)[H])CC)C(=O)OC','C=12[C@]3(C)[C@@]([H])(CCC1C=C(C(=C2O)O)C(C)C)C(CCC3)(C)C','C=1C2=C(C=CC1)C(=CN2)C(C#N)=O','C=1C=CC=2NC=3[C@]4([NH+](CCC3C2C1)C[C@@]5([C@@](C(=CO[C@H]5C)C(OC)=O)(C4)[H])[H])[H]','C=1C=CC=2NC=3[C@]4([NH+](CCC3C2C1)C[C@]5([C@@](C(=CO[C@H]5C)C(OC)=O)(C4)[H])[H])[H]','CC(=C)[C@@H]1CC\C(C)=C\CC\C(C)=C\C1','CC(=O)[C@@]1(O)CC[C@H]2[C@@H]3CC=C4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C','CC(C)=CCCC(C)(O)C=C','CC(C)=CCC[C@](C)(O)[C@H]1CC[C@]2(C)[C@@H]1[C@H](O)C[C@@H]1[C@@]3(C)CC[C@H](O)C(C)(C)[C@@H]3CC[C@@]21C','CC(C)=CCC\C(C)=C\CC[C@](C)(O)C=C','CC(C)=CCC\C(C)=C\CC\C(C)=C\C([O-])=O','CC(C)=CCC\C(C)=C\CC\C(C)=C\CCC(C)(O)C=C','CC(C)=CCC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC1=C(C)C(=O)c2ccccc2C1=O','CC(C)=CCC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CO','CC(C)=CCC\C(C)=C\CC\C(C)=C\CO','CC(C)=CCC\C(C)=C\CC\C(C)=C\COP([O-])(=O)OP([O-])([O-])=O','CC(C)=CCC\C(C)=C\CO','CC(C)=CCC\C(C)=C\Cc1cc(O)ccc1O','CC(C)=CCNc1ncnc2n(cnc12)[C@@H]1O[C@H](COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)[C@@H](O)[C@H]1O','CC(C)=CCNc1ncnc2n(cnc12)[C@@H]1O[C@H](COP([O-])(=O)OP([O-])([O-])=O)[C@@H](O)[C@H]1O','CC(C)=CCNc1ncnc2n(cnc12)[C@@H]1O[C@H](COP([O-])([O-])=O)[C@@H](O)[C@H]1O','CC(C)C1=CC=C(C)CC1','CC(C)C1=CCC(C)=CC1','CC(C)CCCC(C)CCCC(C)CCCC(C)CC([O-])=O','CC(C)CCCCCCCCCCCCCC([O-])=O','CC(C)CCC[C@@H](C)CCC[C@@H](C)CCC[C@]1(C)CCc2c(C)c(O)c(C)c(C)c2O1','CC(C)CCC[C@@H](C)CCC[C@@H](C)CCC[C@]1(C)CCc2cc(O)c(C)c(C)c2O1','CC(C)CCC[C@@H](C)CCC[C@@H](C)CCC\C(C)=C\CC1=C(C)C(=O)C2=C(C=CC=C2)C1=O','CC(C)CCC[C@@H](C)[C@H]1CC[C@@H]2[C@]1(C)CCC\C2=C/C=C1/C[C@@H](O)C[C@H](O)C1=C','CC(C)CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CC=C4[C@@H](O)[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C','CC(C)CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CC[C@H]4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C','CC(C)C[C@@H]1NC(=O)[C@H](CC(C)C)NC1=O','CC(C)[C@H]([NH3+])C([O-])=O','CC(C)c1cc2CC[C@H]3C(C)(C)CCC[C@]3(C)c2cc1O','CC(C)c1ccc2c(CC[C@H]3C(C)(C)CCC[C@]23C)c1','CC(CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C)C=O','CC(\C=C\C1=C(C)CCCC1(C)C)=C/C=C/C(C)=C/C([O-])=O','CC(\C=C\C=C(C)\C=C\C1C(C)=CCCC1(C)C)=C/C=C/C=C(C)/C=C/C=C(C)/C=C/C1=C(C)CCCC1(C)C','CC(\C=C\C=C(C)\C=C\[C@H]1C(C)=CCCC1(C)C)=C/C=C/C=C(C)/C=C/C=C(C)/C=C/C1=C(C)C[C@@H](O)CC1(C)C','CC(\C=C\[C@@]1(O)C(C)=CC(=O)CC1(C)C)=C\C([O-])=O','CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C([O-])=O','CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C=O','CC1(C)CC[C@]2(CO)CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1','CC1(C)[C@@H]2CC[C@@]1(C)C(=O)C2','CC1(C)[C@H](O)CC[C@@]2(C)[C@@H]3CC[C@@](C)(C=C)C=C3CC[C@H]12','CC1=C(CCC([O-])=O)C2=[N+]3C1=Cc1c(C)c(C=C)c4C=C5C(C)=C(C=C)C6=[N+]5[Fe-]3(n14)n1c(=C6)c(C)c(CCC([O-])=O)c1=C2','CC1=C2CC[C@]3(C)CC[C@H](O)C(=C)[C@H]3C[C@H](CC1)C2(C)C','CC1=CC(=C(C)C(=C1C(=O)OC=2C=C(C)C(=C(C2C)O)C(=O)OC)O)O','CC1=CC(=C(C)C(=C1C(=O)OC=2C=C(C)C(=C(C2C)O)C(=O)[O-])O)O','CC1=CC(=C(CO)C(=C1C(=O)OC=2C=C(C)C(=C(C2C)O)C(=O)OC)O)O','CC1=CC(=C(CO)C(=C1C(=O)OC=2C=C(C)C(=C(C2C)O)C(=O)[O-])O)O','CC1CC2=CC=C(C)C(O)=C2C(=O)O1','CCCCCC1OC1C\C=C/CCCCCCCC([O-])=O','CCCCCC1OC1C\C=C/C\C=C/C\C=C/CCCC([O-])=O','CCCCCCCCC1OC1CCCCCCCC([O-])=O','CCCCCCCCCCCCCC(O)CC([O-])=O','CCCCCCCCCCCCCCCC(O)CC([O-])=O','CCCCCCCCCCCCCCCC([O-])=O','CCCCCCCCCCCCCCCCCCCCCC([O-])=O','CCCCCCCCCCCCCCCCCCCCCCCC([O-])=O','CCCCCCCCCCCCCCCCCCCCCCCCCC([O-])=O','CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC([O-])=O','CCCCCCCC\C=C/CCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12','CCCCCCCC\C=C/CCCCCCCC([O-])=O','CCCCCCCC\C=C/C\C=C/C\C=C/CCCC([O-])=O','CCCCCC\C=C/CCCCCCCC([O-])=O','CCCCC[C@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC([O-])=O','CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@@H](O)[C@@H](O)CCCC([O-])=O','CCCCC[C@H](O)\C=C\[C@H]1C=CC(=O)[C@@H]1CCCCCCC([O-])=O','CCCCC[C@H](O)\C=C\[C@H]1[C@H](O)CC(=O)[C@@H]1CCCCCCC([O-])=O','CCCCC[C@H](O)\C=C\[C@H]1[C@H](O)CC(=O)[C@@H]1C\C=C/CCCC([O-])=O','CCCCC[C@H](O)\C=C\[C@H]1[C@H]2C[C@H](OO2)[C@@H]1C\C=C/CCCC([O-])=O','CCCCC[C@H](O)c1c(O)cc2C(=O)c3cc([O-])cc(O)c3C(=O)c2c1O','CCCCC[C@H](OO)\C=C\C=C/CCCCCCCC([O-])=O','CCCCC[C@H](OO)\C=C\C=C/C\C=C/C\C=C/CCCC([O-])=O','CCCCC\C=C/C=C/[C@H](CCCCCCCC([O-])=O)OO','CCCCC\C=C/CC1OC1CCCCCCCC([O-])=O','CCCCC\C=C/CC1OC1C\C=C/C\C=C/CCCC([O-])=O','CCCCC\C=C/C[C@@H](O)\C=C\C=C\C=C/[C@@H](O)CCCC([O-])=O','CCCCC\C=C/C[C@H](OO)\C=C\C=C/C\C=C/CCCC([O-])=O','CCCCC\C=C/C\C=C/CC1OC1C\C=C/CCCC([O-])=O','CCCCC\C=C/C\C=C/CCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12','CCCCC\C=C/C\C=C/CCCCCCCC([O-])=O','CCCCC\C=C/C\C=C/C\C=C/C=C/C(O)CCCC([O-])=O','CCCCC\C=C/C\C=C/C\C=C/C=C/[C@H](CCCC([O-])=O)OO','CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)NCCO','CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCC([O-])=O','CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCC([O-])=O','CCCCC\C=C/C\C=C/[C@@H](CCCCCCC([O-])=O)OO','CCCSc1ccc2[nH]c(NC(=O)OC)nc2c1','CC[C@@]1(O)C[C@H](O[C@H]2C[C@H]([NH3+])[C@H](O)[C@H](C)O2)c2c(O)c3C(=O)c4c(OC)cccc4C(=O)c3c(O)c2C1','CC[C@H](C)C(=O)O[C@H]1CCC=C2C=C[C@H](C)[C@H](CC[C@@H]3C[C@@H](O)CC(=O)O3)[C@@H]12','CC[C@H](C)[C@H]([NH3+])C([O-])=O','CC[C@H]1OC(=O)C[C@@H](O)[C@H](C)[C@@H](O[C@@H]2O[C@H](C)[C@@H](O)[C@@H]([C@H]2O)[NH+](C)C)[C@@H](CC=O)C[C@@H](C)C(=O)\C=C\C(C)=C\[C@@H]1C','CC[C@H]1OC(=O)[C@H](C)C(=O)[C@H](C)[C@@H](O[C@@H]2O[C@H](C)C[C@@H]([C@H]2O)[NH+](C)C)[C@@H](C)C[C@@H](C)C(=O)\C=C\[C@H]1C','CC[C@H]1OC(=O)[C@H](C)[C@@H](O)[C@H](C)[C@@H](O)[C@@H](C)C[C@@H](C)C(=O)[C@H](C)[C@@H](O)[C@H]1C','CC[C@H]1OC(=O)[C@H](C)[C@@H](O[C@@H]2O[C@H](C)C[C@@H]([C@H]2O)[NH+](C)C)[C@@H](C)C[C@@H](C)C(=O)\C=C\[C@H]1C','CC[C@H]1OC(=O)[C@H](C)[C@@H](O[C@H]2C[C@@](C)(O)[C@@H](O)[C@H](C)O2)[C@H](C)[C@@H](O[C@@H]2O[C@H](C)C[C@@H]([C@H]2O)[NH+](C)C)[C@](C)(O)C[C@@H](C)C(=O)[C@H](C)[C@@H](O)[C@H]1C','CC\C=C/C[C@H](OO)\C=C\C=C/CCCCCCCC([O-])=O','CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC([O-])=O','CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCC([O-])=O','CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCC([O-])=O','CN1CCc2cc3OCOc3cc2C(=O)Cc2ccc3OCOc3c2C1','COC(=O)Nc1nc2cc(Sc3ccccc3)ccc2[nH]1','COC(=O)\C=C(/C)CC\C=C(/C)CCC=C(C)C','COC1=CC(C[C@H]2COC(=O)[C@@H]2CC2=CC=C(O)C(OC)=C2)=CC=C1O','COc1c2occc2cc2ccc(=O)oc12','COc1cc(O)c2C(=O)C[C@H](Oc2c1)c1ccc(O)cc1','COc1cc2CC[NH+](C)[C@@H](Cc3ccc(O)cc3)c2cc1O','COc1cc2CC[NH+](C)[C@H](Cc3ccc(O)cc3)c2cc1O','COc1ccc(C[C@@H]2[NH+](C)CCc3cc(OC)c(O)cc23)cc1O','COc1ccc(C[C@H]2[NH+](C)CCc3cc(OC)c(O)cc23)cc1O','COc1ccc(cc1)-c1cc(=O)c2c(O)cc(OC)cc2o1','COc1ccc(cc1)-c1coc2cc([O-])ccc2c1=O','COc1ccc(cc1)C([O-])=O','COc1cccc2C(=O)c3c(O)c4C[C@](O)(C[C@H](O[C@H]5C[C@H]([NH3+])[C@H](O)[C@H](C)O5)c4c(O)c3C(=O)c12)C(C)=O','COc1cccc2C(=O)c3c(O)c4C[C@](O)(C[C@H](O[C@H]5C[C@H]([NH3+])[C@H](O)[C@H](C)O5)c4c(O)c3C(=O)c12)C(C)O','COc1ccccc1','COc1ccccc1O','C[C@@H](CCC=C(C)C)[C@H]1CC[C@]2(C)C[C@H]3[C@H](CC[C@@]3(C)O)\C(C)=C/C[C@@H]12','C[C@@H](CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)CC[C@]4(C)[C@H]3CC[C@]12C)C=O','C[C@@H](CO)CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C','C[C@@H](CO)CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CC=C4[C@@H](O)[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C','C[C@@H](CO)CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)CC[C@]4(C)[C@H]3CC[C@]12C','C[C@@H](Cc1ccccc1)N(C)Cc1ccccc1','C[C@@H]1CCC(C(=O)C1)=C(C)C','C[C@@H]1CCC=C(C)[C@]11CC[C@H](C1)C(C)=C','C[C@@H]1CCCC2=CC[C@H](C[C@]12C)C(C)=C','C[C@@H]1CC[C@@H]2[C@@H](CC[C@@H](O)C[C@@H](O)CC([O-])=O)[C@@H](C)C=CC2=C1','C[C@@H]1CC[C@H]2[C@H](C1)C=C[C@H](C)[C@@H]2CC[C@@H](O)C[C@@H](O)CC([O-])=O','C[C@@]12CC[C@@H](CC1)C(C)(C)O2','C[C@H](CCC([O-])=O)[C@H]1CC[C@H]2[C@@H]3[C@@H](O)C[C@@H]4C[C@H](O)CC[C@]4(C)[C@H]3CC[C@]12C','C[C@H](CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C)C=O','C[C@H](CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CC=C4[C@@H](O)[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C)C=O','C[C@H](CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)CC[C@]4(C)[C@H]3CC[C@]12C)C=O','C[C@H](CC[C@@H]1OC1(C)C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C','C[C@H](CO)CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)CC[C@]4(C)[C@H]3CC[C@]12C','C[C@H](\C=C\[C@H](C)C(C)(C)O)[C@H]1CC[C@H]2\C(CCC[C@]12C)=C\C=C1\C[C@@H](O)CCC1=C','C[C@H]1CCC2=C(C)C(C)(C)[C@H]3CC[C@@]12C3','C[C@H]1CC[C@H]2[C@@H]1[C@H](O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)OC=C2C([O-])=O','C[C@H]1C[C@@H](O)C2=C(C)C(C)(C)[C@H]3CC[C@@]12C3','C[C@H]1C[C@H](O)C2=C(C)C(C)(C)[C@H]3CC[C@@]12C3','C[NH+]1CCC[C@H]1c1cccnc1','C\C(=C/CO)\C=C\C=C(/C)\C=C\C1=C(C)CCCC1(C)C','C\C1=C/CC(C)(C)\C=C\C\C(C)=C\CC1','C\C1=C/CC\C(C)=C\C[C@@H](CC1)C(=C)C([O-])=O','C\C1=C/CC\C(C)=C\[C@H]2OC(=O)C(=C)[C@@H]2CC1','C\C1=C/C[C@@H]([C@H](O)C\C(C)=C\CC1)C(=C)C([O-])=O','C\C=C(/C)CCCCCCC\C=C/C=C/C=C\CC1=CC(O)=CC(O)=C1','Cc1cccc(O)c1','Cc1cccc2c(C([O-])=O)c(O)ccc12','Cc1cccc2c(cccc12)C([O-])=O','N#CCc1ccccc1','N1C=C(CCNC(CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)=O)C2=C1C=CC(O)=C2','O(C[C@H](O)COC(CCCCCCC/C=C\CCCCCCCC)=O)P(OCC[N+](C)(C)C)(=O)[O-]','O1C2=C(C(C(C1(C3=C(C=C(C=C3*)*)*)*)(*)*)=O)C(=C(C(=C2*)*)*)*','O1C2=C(C(C(C1C3=C(C(=C(C(=C3*)*)*)*)*)*)=O)C(=C(C(=C2*)*)*)*','O1C=2C(=C([O-])C=3C(C2)=CC(OC)=CC3OC)C(=O)C=C1C','O=C([O-])[C@@H]([NH2+]C/C=C(/CC/C=C(/C=O)\C)\C)CCC(=O)[O-]','O=C([O-])[C@@H]([NH2+]C/C=C(/CC/C=C(/CO)\C)\C)CCC(=O)[O-]','O=C([O-])[C@@H]([NH2+]C/C=C(/CCC=C(C)C)\C)CCC(=O)[O-]','O=C([O-])[C@@H]([NH3+])CCCCCCCCSC','O=C([O-])[C@@H]([NH3+])CCCCCCCSC','O=C([O-])[C@@H]([NH3+])CCCCCSC','O=C([O-])[C@@H]([NH3+])CCCCSC','O=C1C(O)=C(C(=O)C(=C1C2=CC=CC=C2)[O-])C3=CC=CC=C3','O=C1C=2[C@]3([C@@]([C@](CC3)([C@@H](CC/C=C(\C)/C([O-])=O)C)[H])(CCC2[C@@]4(C(C1)C(C(=O)CC4)(C)C)C)C)C','O=C1Cc2ccccc2N1','O=C1N[C@H](C(=O)N[C@H]1CC=2C=3C(NC2C(C=C)(C)C)=CC=CC3)C','O=C1OC(/C=C/C=C/CCCCCC/C=C/C=C/C=C/C)=CC(=C1)O','O=O','O=c1ccc2cc3ccoc3cc2o1','OC1C(=O)Nc2ccccc12','OCCCCCCCCCCCCCCCCCCCCCC([O-])=O','OCCCCCCCCCCCCCCCCCCCCCCCCCC([O-])=O','OCCCCC\C=C/C[C@@H](O)\C=C\C=C\C=C/[C@@H](O)CCCC([O-])=O','OCCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCC([O-])=O','OCc1cccc(O)c1','O[C@@H]1[C@@]2([C@@]([C@](C1)([C@@H](CC/C=C(\C)/C([O-])=O)C)[H])(CC=C3C2=CCC4[C@@]3(CCC(=O)C4(C)C)C)C)C','O[C@@H]1[C@H](Oc2cc(O)cc(O)c2C1=O)c1ccc(O)cc1','Oc1cc(O)c2C(=O)C=C([O-])C(=O)c2c1','Oc1cc(O)c2C(=O)C[C@H](Oc2c1)c1ccc(O)c(O)c1','Oc1cc([O-])cc2C(=O)c3cc4O[C@H]5OCC[C@H]5c4c(O)c3C(=O)c12','Oc1ccc(CC([O-])=O)cc1O','Oc1ccc(C[C@@H]2NC(=O)[C@H](Cc3ccc(O)cc3)NC2=O)cc1','Oc1ccc(cc1)-c1oc2cc(O)cc(O)c2c(=O)c1[O-]','Oc1ccc(cc1)[C@@H]1CC(=O)c2c(O)cc(O)cc2O1','Oc1ccc(cc1)[C@@H]1CC(=O)c2ccc(O)cc2O1','Oc1cccc(CC([O-])=O)c1','[C@@H]1(CCCCCCCC(=O)[O-])[C@H](CCCCCCCC)O1','[C@@H]1([C@H](CCC1=O)CC(N[C@H](C([O-])=O)[C@H](CC)C)=O)C/C=C\CC','[C@@]1(CC/C(/C)=C/CO)([C@@H](CC[C@@]2([C@]1(C)CCCC2(C)C)[H])C)O','[C@@]1([C@@H]([C@H]([C@@H]([C@H](C(C)C)C)O)O)C)([H])[C@]2(CC[C@]3([C@@](C[C@@H]([C@]4(CC(CC[C@@]43C)=O)[H])O)([C@@]2(CC1)[H])[H])[H])C','[C@@]1([C@@H]([C@H]([C@@H]([C@H](C(C)C)C)O)O)C)([H])[C@]2(CC[C@]3([C@@](C[C@@H]([C@]4(C[C@@H](CC[C@@]43C)O)[H])O)([C@@]2(CC1)[H])[H])[H])C','[C@@]12(C)[C@]3([C@]([C@@]4(CC[C@@H](C(C4=CC3)(C)C)O)[H])([C@@H](C[C@]2(C)[C@](CC1)([C@@H](CCC=C(C)C)C)[H])O)C)[H]','[C@@]12(CCCC=C1C=C[C@@H]([C@@H]2CC[C@H](C[C@H](CC(=O)[O-])O)O)C)[H]','[C@@]12(CCCC[C@@]1(C=C[C@@H]([C@@H]2CC[C@H](C[C@H](CC(=O)[O-])O)O)C)[H])[H]','[C@@]12(CC[C@@]([C@]2(CC[C@]3([H])[C@]4(CC[C@H](O)C([C@]4([H])CC[C@@]13C)(C)C)C)[H])([C@@](O[C@@H]5O[C@@H]([C@@H](O)[C@@H]([C@H]5O)O)CO)(CCC=C(C)C)C)[H])C','[C@@]12([C@]3([C@](CC[C@@]1(C[C@@](CC2)(C)C4CO4)[H])(C(CCC3)=C)C)[H])C','[C@@]12([C@]3([C@](CC[C@@]1(C[C@@](CC2)(C)C=C)[H])(C(CCC3)=C)C)[H])C','[C@H]1(C2=C(C[C@@]3([C@@]1(C(OC3)=O)[H])[H])C=C4OCOC4=C2)C5=CC(=C(C(=C5)OC)O)OC','[C@H]1(C2=C(C[C@@]3([C@@]1(C(OC3)=O)[H])[H])C=C4OCOC4=C2)C5=CC(=C(OC)C(=C5)OC)OC','[C@H]1(CCCCCCCC(=O)[O-])[C@@H](CCCCCCCC)O1','[C@H]1(O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO)O[C@H]2[C@@H]([C@@H](C(=CO2)C(OC)=O)CC=O)C=C','[C@H]1([C@]2([C@](CC=C(C1)C)(\C(\CC2)=C(/C)\C(=O)[O-])[H])C)O','[C@]1([C@H](C(=C[C@@]2([C@@]1([C@@H](C[C@@H](C2)C)C)[H])[H])C)[C@@H](CC)C)(C(=O)/C=C\O)C','[C@]1([C@H](C(=C[C@@]2([C@@]1([C@@H](C[C@@H](C2)C)C)[H])[H])C)[C@@H](CC)C)(C(=O)CCO)C','[C@]1([C@H]([C@](C([C@@]2([C@@]1([C@@H](C[C@](C2)(O)C)C)[H])[H])=O)(C)O)[C@@H](CC)C)(C(=O)/C=C\O)C','[C@]12(C(/C(/[C@]([C@@]3([C@@]1([C@@](C[C@](C3)(O)C)(C)[H])[H])[H])(O)[C@@]([C@@]2([C@@H](CC)C)[H])(C)O)=C\O)=O)C','[C@]12([C@@](C=C(C(CC=C(C)C(CC=C(CC1)C)O)O)C)(C2(C)C)[H])[H]','[C@]12([C@@](C=C(C(CC=C(C)CCC=C(CC1)C)O)C)(C2(C)C)[H])[H]','[C@]12([C@@](C=C(CCC=C(C)C(CC=C(CC1)C)O)C)(C2(C)C)[H])[H]','[C@]12([C@@](C=C(CCC=C(C)CCC=C(CC1)C)C)(C2(C)C)[H])[H]','[C@]12([C@@]([C@H](OC1)C3=CC(=C(C=C3)O)OC)(CO[C@@H]2C4=CC5=C(C=C4)OCO5)[H])[H]','[C@]12([C@]([C@@]3([C@@]4([C@]([C@]5(C(C[C@]3(CC1)C)=C(CC5)C)[H])(C4)C)[H])[H])([C@H](CC2)C(C)C)[H])C','[C@]12([C@]([C@@]3([C@@]4([C@]([C@]5(C(C[C@]3(CC1)CO)=C(CC5)C(=O)[O-])[H])(C4)C)[H])[H])([C@H](CC2)C(C)C)[H])C','[H]C(=O)C(\C)=C\CC[C@@H](C)[C@@]1([H])CC[C@@]2(C)C3=C(CC[C@]12C)[C@@]1(C)CC[C@H](O)C(C)(C)[C@]1([H])CC3','[H]C(=O)C1=C(C)C(CC)=C(CC2=C(C)C3=C(N2)\C([C@@H](C(=O)OC)C3=O)=C2/N=C(CC3NC(=O)C(C=C)=C3C)[C@@H](C)[C@@H]2CCC([O-])=O)N1','[H]C(=O)[C@H](C)CCC[C@@H](C)[C@@]1([H])CC[C@@]2([H])[C@]3([H])[C@H](O)C[C@]4([H])C[C@H](O)CC[C@]4(C)[C@@]3([H])C[C@H](O)[C@]12C','[H]C(=O)\C=C(/C)\C=C\C=C(/C)\C=C\C1=C(C)CCCC1(C)C','[H]C(\C=C/CCCCCCCC([O-])=O)=C1O[C@H]1C\C=C/CC','[H]O[H]','[H][C@@]1(C)CC[C@]2([H])[C@]1([H])C[C@@]1(C)CC[C@H](C(C)C)\C1=C\C[C@]2(C)O','[H][C@@]1(C)C[C@@H](O)[C@]2([H])[C@]1([H])C[C@@]1(C)CC[C@H](C(C)C)\C1=C\C[C@]2(C)O','[H][C@@]1(CCC(C)=CC1)C(C)=C','[H][C@@]1(CC[C@@]2(C)C3=C(CC[C@]12C)[C@@]1(C)CC[C@H](O)C(C)(C)[C@]1([H])CC3)[C@H](C)CCC=C(C)C','[H][C@@]1(CC[C@@]2(C)C3=C(CC[C@]12C)[C@@]1(C)CC[C@H](O)C(C)(C)[C@]1([H])CC3)[C@H](C)CCCC(C)C','[H][C@@]1(CC[C@@]2(C)C3=C(CC[C@]12C)[C@@]1(C)CC[C@H](O)C(C)(C)[C@]1([H])CC3)[C@H](C)CC\C=C(/C)CO','[H][C@@]1(CC[C@@]2(C)[C@]3([H])CC=C4[C@@]([H])(CC[C@H](O)C4(C)C)[C@]3(C)CC[C@]12C)[C@H](C)CCC=C(C)C','[H][C@@]1(CC[C@@]2(O)C3=CC(=O)[C@]4([H])C[C@@H](O)[C@@H](O)C[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)[C@H](O)CCC(C)(C)O','[H][C@@]1(CC[C@@]2([H])C3=CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CCC(=C)C(C)C','[H][C@@]1(CC[C@@]2([H])C3=CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CCCC(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])C(=O)C=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CCCC(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC(=O)[C@@]4([H])C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CC[C@@H](C)C(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC(=O)[C@@]4([H])C[C@H](O)[C@H](O)C[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)[C@@H](O)[C@H](O)[C@@H](C)C(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CCC=C(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CCCC(C)(C)O','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CCCC(C)CO','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CC[C@@H](C)C(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CC[C@@H](CC)C(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CC[C@@H](O)C(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CC[C@H](O)C(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)[C@@H](O)C[C@@H](C)C(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)[C@@H](O)[C@H](O)[C@@H](C)C(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)[C@H](O)CCC(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CCC4=CC(=O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)C(=O)CO','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CCC4=CC(=O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CCCC(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])CCC4=CC(=O)CC[C@]4(C)[C@@]3([H])[C@@H](O)C[C@]12C)C(=O)CO','[H][C@@]1(CC[C@@]2([H])[C@]3([H])C[C@H](O)[C@@]4([H])C[C@H](O)[C@H](O)C[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)[C@@H](O)[C@H](O)[C@@H](C)C(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])[C@H](O)C=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CCCC(C)C','[H][C@@]1(CC[C@@]2([H])[C@]3([H])[C@H](O)CC4=CC(=O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CCCC(C)C','[H][C@@]1(CC[C@@]2([H])\C(CCC[C@]12C)=C\C=C1\C[C@@H](O)CCC1=C)[C@H](C)CCC(=O)C(C)(C)O','[H][C@@]1(CC[C@@]2([H])\C(CCC[C@]12C)=C\C=C1\C[C@@H](O)CCC1=C)[C@H](C)\C=C\[C@H](C)C(C)C','[H][C@@]1(CC[C@@]2([H])\C(CCC[C@]12C)=C\C=C1\C[C@@H](O)C[C@H](O)C1=C)[C@H](C)CC=O','[H][C@@]1(CC[C@@]2([H])\C(CCC[C@]12C)=C\C=C1\C[C@@H](O)C[C@H](O)C1=C)[C@H](C)CCC(=O)C(C)(C)O','[H][C@@]1(CC[C@@]2([H])\C(CCC[C@]12C)=C\C=C1\C[C@@H](O)C[C@H](O)C1=C)[C@H](C)CCCC(C)(C)O','[H][C@@]1(CC[C@@]2([H])\C(CCC[C@]12C)=C\C=C1\C[C@@H](O)C[C@H](O)C1=C)[C@H](C)CCO','[H][C@@]1(CC[C@@]2([H])\C(CCC[C@]12C)=C\C=C1\C[C@@H](O)C[C@H](O)C1=C)[C@H](C)CC[C@@H](O)C(C)(C)O','[H][C@@]1(CC[C@]2(C)[C@]1([H])CC[C@]1([H])[C@@]3(C)CC[C@H](O)C(C)(C)[C@]3([H])CC[C@@]21C)[C@@](C)(O)CCC=C(C)C','[H][C@@]1(CC[C@]2([H])[C@]1(C)CCC\C2=C/C=C1/C[C@@H](O)CCC1=C)[C@H](C)CCCC(C)(C)O','[H][C@@]1(CC[C@]2([H])[C@]1(C)CCC\C2=C/C=C1/C[C@@H](O)CCC1=C)[C@H](C)CCCC(C)C','[H][C@@]1(CC[C@]2([H])[C@]1(C)CCC\C2=C/C=C1/C[C@@H](O)CCC1=C)[C@H](C)CC[C@@H](O)C(C)(C)O','[H][C@@]1(C[C@@]2([H])C[C@]3([H])C(=C)[C@H](CC[C@@]3(C)[C@@H](OC(C)=O)[C@H](OC(C)=O)C(=C1C)C2(C)C)OC(C)=O)OC(C)=O','[H][C@@]1(C[C@@]2([H])C[C@]3([H])C(=C)[C@H](C[C@H](O)[C@@]3(C)[C@@H](OC(C)=O)[C@H](OC(C)=O)C(=C1C)C2(C)C)OC(C)=O)OC(C)=O','[H][C@@]1(C[C@@]2([H])[C@@H](O)[C@]3([H])C(=C)[C@H](CC[C@@]3(C)[C@@H](OC(C)=O)[C@H](OC(C)=O)C(=C1C)C2(C)C)OC(C)=O)OC(C)=O','[H][C@@]12CC(C)(C)CC[C@]1(C)CC[C@]1(C)C2=CC(=O)[C@]2([H])[C@@]3(C)CC[C@H](O)C(C)(C)[C@]3([H])CC[C@@]12C','[H][C@@]12CC(C)(C)CC[C@]1(C)CC[C@]1(C)C2=CC[C@]2([H])[C@@]3(C)CC[C@H](O)C(C)(C)[C@]3([H])CC[C@@]12C','[H][C@@]12CC(C)(C)CC[C@]1(C)CC[C@]1(C)C2=C[C@@H](O)[C@]2([H])[C@@]3(C)CC[C@H](O)C(C)(C)[C@]3([H])CC[C@@]12C','[H][C@@]12CC(C)(C)C[C@@H](O)[C@]1(C)CC[C@]1(C)C2=CC[C@]2([H])[C@@]3(C)CC[C@H](O)C(C)(C)[C@]3([H])CC[C@@]12C','[H][C@@]12CC(C)(C)C[C@@]11[C@H](C)CC[C@@]1([H])C(=C2)C([O-])=O','[H][C@@]12CC(C)(C)C[C@@]11[C@H](C)CC[C@@]1([H])C(C)=C2','[H][C@@]12CC(C)(C)C[C@]11[C@@]([H])(COC(=O)[C@]11CO1)C(=C2)C([O-])=O','[H][C@@]12CC=C(C)[C@H](CO)[C@@]1(C)CCCC2(C)C','[H][C@@]12CC=C3C[C@@H](O)CC[C@]3(C)[C@@]1([H])CC[C@@]1(C)[C@@]2([H])CC[C@]1([H])[C@@](C)(O)[C@H](O)CCC(C)C','[H][C@@]12CC=C3C[C@@H](O)CC[C@]3(C)[C@@]1([H])CC[C@]1(C)C(=O)CC[C@@]21[H]','[H][C@@]12CC=C3C[C@@H](O)CC[C@]3(C)[C@@]1([H])CC[C@]1(C)[C@H](CC[C@@]21[H])C(C)=O','[H][C@@]12CC=C3[C@]4([H])CC[C@]([H])([C@H](C)CCCC(C)C)[C@@]4(C)CC[C@]3([H])[C@@]1(C)CCC(=O)C2','[H][C@@]12CC=C3[C@]4([H])CC[C@]([H])([C@H](C)CCCC(C)C)[C@@]4(C)CC[C@]3([H])[C@@]1(C)CC[C@H](O)C2','[H][C@@]12CCC(C)=C[C@]1([H])[C@@H](CC[C@H]2C)C(C)=C','[H][C@@]12CCC3=C(CC=C(C3)C(C)C)[C@@]1(C)CCCC2(C)C','[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])C(=O)C[C@@]1(C)[C@@]2([H])CC[C@]1(O)C(=O)CO','[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])CC[C@@]1(C)[C@@]2([H])CC[C@]1(O)C(=O)CO','[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])CC[C@@]1(C)[C@@]2([H])C[C@@H](O)[C@]1(O)C(C)=O','[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])CC[C@]1(C)C(=O)CC[C@@]21[H]','[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])CC[C@]1(C)[C@@H](O)CC[C@@]21[H]','[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])CC[C@]1(C)[C@H](CC[C@@]21[H])C(C)=O','[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])[C@@H](O)C[C@@]1(C)[C@@]2([H])CC[C@]1(O)C(=O)CO','[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])[C@@H](O)C[C@]1(CO)[C@H](CC[C@@]21[H])C(=O)CO','[H][C@@]12CCC3=CC(=O)CC[C@]3(C=O)[C@@]1([H])CC[C@]1(C)C(=O)CC[C@@]21[H]','[H][C@@]12CCC3=CC(=O)CC[C@]3(CO)[C@@]1([H])CC[C@]1(C)C(=O)CC[C@@]21[H]','[H][C@@]12CCCN1C(=O)[C@H](Cc1c(CC=C(C)C)[nH]c3cc(OC)ccc13)NC2=O','[H][C@@]12CCCN1C(=O)[C@H](Cc1c(CC=C(C)C)[nH]c3ccccc13)NC2=O','[H][C@@]12CCCN1C(=O)[C@]1([H])Cc3c([nH]c4cc(OC)ccc34)[C@H](C=C(C)C)N1C2=O','[H][C@@]12CC[C@@](C)(C=C)C=C1CC[C@]1([H])C(C)(C)CCC[C@@]21C','[H][C@@]12CC[C@@]3(C)C(C)=C4C[C@]5(C)CC[C@@H](C(C)C)[C@@]5([H])C[C@]4([H])[C@@]13CC[C@H]2C','[H][C@@]12CC[C@@]3([H])[C@]4([H])CCC(=O)[C@@]4(C)CC[C@]3([H])[C@@]1(C)CC[C@H](O)C2','[H][C@@]12CC[C@@]3([H])[C@]4([H])CC[C@H](O)[C@@]4(C)CC[C@]3([H])[C@@]1(C)CCC(=O)C2','[H][C@@]12CC[C@@]3([H])[C@]4([H])CC[C@H](O)[C@@]4(C)CC[C@]3([H])[C@@]1(C)CC[C@H](O)C2','[H][C@@]12CC[C@@]3([H])[C@]4([H])CC[C@]([H])([C@H](C)[C@@H](O)C[C@@H](C)C(C)C)[C@@]4(C)CC[C@]3([H])[C@@]1(C)CCC(=O)C2','[H][C@@]12CC[C@@]3([H])[C@]4([H])CC[C@]([H])([C@H](C)[C@@H](O)C[C@@H](C)C(C)C)[C@@]4(C)CC[C@]3([H])[C@@]1(C)CC[C@@H](O)C2','[H][C@@]12CC[C@@]3([H])[C@]4([H])CC[C@]([H])([C@H](C)[C@@H](O)C[C@@H](C)C(C)C)[C@@]4(C)CC[C@]3([H])[C@@]1(C)CC[C@H](O)C2','[H][C@@]12CC[C@@]3([H])[C@]4([H])CC[C@]([H])([C@H](C)[C@@H](O)[C@H](O)[C@@H](C)C(C)C)[C@@]4(C)CC[C@]3([H])[C@@]1(C)C[C@@H](O)[C@@H](O)C2','[H][C@@]12CC[C@H](O)[C@@]1(C)CC[C@@]1([H])[C@@]2([H])CC=C2C[C@@H](O)CC[C@]12C','[H][C@@]12CC[C@](C)(CC1=CC[C@@]1([H])C(C)(C)CCC[C@]21C)C=C','[H][C@@]12CC[C@](O)(C(C)=O)[C@@]1(C)CC[C@@]1([H])[C@@]2([H])CCC2=CC(=O)CC[C@]12C','[H][C@@]12CC[C@]3([H])[C@]([H])(CC[C@]4(C)[C@]([H])(CC[C@@]34[H])[C@H](C)CC[C@@H](C)C(C)C)[C@@]1(C)CC[C@H](O)C2','[H][C@@]12CC[C@]3([H])[C@]([H])(CC[C@]4(C)[C@]([H])(CC[C@@]34[H])[C@H](C)[C@@H](O)[C@H](O)[C@@H](C)C(C)C)[C@@]1(C)CCC(=O)C2','[H][C@@]12CC[C@]3([H])[C@]([H])(CC[C@]4(C)[C@]([H])(CC[C@@]34[H])[C@H](C)[C@@H](O)[C@H](O)[C@@H](C)C(C)C)[C@@]1(C)CC[C@@H](O)C2','[H][C@@]12CC[C@]3([H])[C@]([H])(CC[C@]4(C)[C@]([H])(CC[C@@]34[H])[C@H](C)[C@@H](O)[C@H](O)[C@@H](C)C(C)C)[C@@]1(C)CC[C@H](O)C2','[H][C@@]12CC\C(C)=C\CC[C@@]3(C)O[C@]3([H])[C@@]1([H])OC(=O)C2=C','[H][C@@]12COc3cc(O)ccc3[C@]1([H])Oc1cc(O)ccc21','[H][C@@]12C[C@@](C)(CO)CC[C@]1(C)CC[C@]1(C)C2=CC(=O)[C@]2([H])[C@@]3(C)CC[C@H](O)C(C)(C)[C@]3([H])CC[C@@]12C','[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])CC[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCC(=O)NCCS([O-])(=O)=O','[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])CC[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCC([O-])=O','[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])CC[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCCC(C)C','[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCCC(C)C','[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCC[C@@H](C)CO','[H][C@@]12C[C@H](\C(=C\O)C(=O)OC)\C(CN1CCC1=C2NC2=CC=CC=C12)=C/C','[H][C@@]12C[C@](C)(CC[C@]1(C)CC[C@]1(C)C2=CC(=O)[C@]2([H])[C@@]3(C)CC[C@H](O)C(C)(C)[C@]3([H])CC[C@@]12C)C=O','[H][C@@]12Cc3ccc(OC)c(O)c3CN1CCc1cc(OC)c(O)cc21','[H][C@@]12Cc3ccc(OC)c(OC)c3CN1CCc1cc(OC)c(O)cc21','[H][C@@]12Cc3ccc(OC)c(OC)c3C[N+]1(C)CCc1cc3OCOc3cc21','[H][C@@]12Cc3ccc4OCOc4c3CN1CCc1cc(OC)c(O)cc21','[H][C@@]12[NH+]3CC[C@]11C(Nc4cc(OC)ccc14)=C(C[C@]2(CC)C=CC3)C(=O)OC','[H][C@@]12[NH+]3CC[C@]11C(Nc4ccccc14)=C(C[C@]2(CC)C=CC3)C(=O)OC','[H][C@]1(CCC(C)=CC1)C(C)=C','[H][C@]1(C[C@@H]2CC[N@H+]1C[C@@H]2C=C)[C@H](O)c1ccnc2ccc(OC)cc12','[H][C@]1(C\C=C(C)/CCC[C@H](C)[C@H](O)[C@@H](C)C(=O)C(C)(C)[C@@H](O)CC(=O)O1)C(\C)=C\C1=CSC(C)=N1','[H][C@]1(C\C=C/CCC[C@H](C)[C@H](O)[C@@H](C)C(=O)C(C)(C)[C@@H](O)CC(=O)O1)C(\C)=C\C1=CSC(C)=N1','[H][C@]1(Cc2c(O1)ccc1ccc(=O)oc21)C(C)(C)O','[H][C@]1(Cc2cc3ccc(=O)oc3cc2O1)C(C)(C)O','[H][C@]12CC=C(C)C[C@H](O)[C@]1(C)[C@H](O)C\C2=C(\C)C([O-])=O','[H][C@]12CCC(=CC1=CC[C@@]1([H])[C@](C)(CO)CCC[C@]21C)C(C)C','[H][C@]12CCC(C)=C(CC[C@]3(C)CCC=C(C)[C@@]3([H])C1)C2(C)C','[H][C@]12CCC(C)=C(CC[C@]3(C)CC[C@H](OC(C)=O)C(=C)[C@@]3([H])C1)C2(C)C','[H][C@]12CCC(C)=C([C@@H](O)C[C@]3(C)CC[C@H](OC(C)=O)C(=C)[C@@]3([H])C1)C2(C)C','[H][C@]12CC[C@@]34C[C@@H](CC[C@@]3([H])[C@]1(C)CCCC2(C)C)C(=C)C4','[H][C@]12CC[C@@]34C[C@@H](CC[C@@]3([H])[C@]1(C)CCCC2(C)C)C(C)=C4','[H][C@]12CC[C@@]34C[C@@H](CC[C@@]3([H])[C@]1(C)CCC[C@@]2(C)C([O-])=O)C(=C)C4','[H][C@]12CC[C@H](C)[C@@]1([H])[C@H](O)OC=C2C','[H][C@]12CC[C@]3(C)C(=O)CC[C@@]3([H])[C@]1([H])CCc1cc(O)ccc21','[H][C@]12CC[C@]3(C)C\C=C(C)\CC\C=C(C)\CC[C@@]3([H])[C@]1(C)CC[C@@H]2C(C)=C','[H][C@]12CC[C@]3(C)[C@@H](O)CC[C@@]3([H])[C@]1([H])CCc1cc(O)ccc21','[H][C@]12CC[C@]3([H])C(C)(C)CCC[C@@]3(C)[C@]1([H])CC=C(C=C)[C@H]2C','[H][C@]12CC[C@]3([H])[C@]([H])(CC[C@]4(C)[C@]([H])(CC[C@@]34[H])[C@H](C)CCC([O-])=O)[C@@]1(C)CC[C@@H](O)C2','[H][C@]12CO[C@H](c3ccc(O)c(OC)c3)[C@@]1([H])CO[C@@H]2c1ccc(O)c(OC)c1','[H][C@]12C[C@@H](O)[C@H](\C=C\[C@@H](O)CCCCC)[C@@]1([H])C\C(O2)=C\CCCC([O-])=O','[H][C@]12C[C@H](O)[C@H](C)[C@@]1([H])[C@@H](OC=C2C(=O)OC)O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O','[H][C@]12OC=C[C@@]1([H])c1c(O2)cc(OC)c2c1oc1cccc(OC)c1c2=O','[H][C@]12OCC[C@@]1([H])c1c(O2)cc(OC)c2c1oc1cccc(OC)c1c2=O','[H]\C(C(C)C)=N/O','[H]\C(Cc1ccc(O)cc1)=N/O','[NH3+]CCc1c[nH]c2ccccc12','[NH3+][C@@H](CCC(=O)N[C@@H](CS)C(=O)NCC(=O)[O-])C(=O)[O-]','[NH3+][C@@H](CSC(C#N)c1c[nH]c2ccccc12)C([O-])=O','[NH3+][C@@H](Cc1c[nH]c2ccccc12)C([O-])=O','[NH3+][C@@H](Cc1ccc(O)cc1)C([O-])=O','[NH3+][C@@H](Cc1ccccc1)C([O-])=O','[O-]C(=O)CCCCCCCCCCCCCCCCCCCCC=O','[O-]C(=O)CCCCCCCCCCCCCCCCCCCCCCCCC=O','[O-]C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC=O','[O-]C(=O)CC[*]','[O-]C(=O)C[*]','[O-]C(=O)Cc1ccccc1','[O-]C(=O)[C@@H]1CSC(=N1)c1c[nH]c2ccccc12','[O-]C(=O)\C=C\c1ccccc1','[O-]C(=O)c1ccccc1','[O-]C(CCCCCCC/C=C\C[C@@H](CCCCCC)O)=O','[O-]C(CCCCCCCCCCC(CCCCCC)O)=O','[O-]C1=C(C(=O)C2=C(C)C=C(O)C=C2OC)C(=C(C(=C1)OC)Cl)[O-]','[O-][N+]#N','[O-]c1ccc(cc1)[N+]([O-])=O','c1cc2ccccc2[nH]1'],
+colors: [
+{
+r: [152,255,255,31,174,152,31,255,174,44,44,31,31,31,31,152,31,255,44,44,255,255,255,44,44,44,44,174,174,44,44,255,44,255,255,255,255,31,152,44,44,44,44,44,44,44,44,44,44,31,31,31,31,31,31,152,31,31,44,44,44,44,44,44,44,44,31,31,31,31,255,255,255,255,255,31,255,255,174,174,174,44,44,44,44,44,44,44,44,31,174,44,44,31,44,31,174,174,174,44,44,44,44,44,44,44,174,174,31,31,31,31,31,152,174,44,44,44,174,31,44,44,44,44,44,44,174,44,255,44,255,255,255,255,255,31,31,31,31,31,31,31,31,31,31,44,31,31,255,31,31,31,31,31,31,255,31,31,44,31,31,31,31,31,44,31,31,31,31,31,31,255,31,174,174,44,174,174,174,174,174,44,31,31,31,44,31,31,44,44,44,44,44,44,44,44,44,174,174,174,174,174,255,174,31,31,174,31,44,44,44,255,255,31,31,31,31,174,31,174,31,174,44,174,174,44,31,44,44,44,44,255,255,174,174,44,31,31,44,44,255,255,255,255,44,44,44,44,255,255,44,255,255,44,44,44,31,31,31,31,255,255,44,174,44,255,255,174,44,44,44,255,31,44,44,44,44,44,255,255,44,44,44,44,44,31,44,255,255,255,255,255,44,44,44,44,44,255,255,255,44,31,31,44,31,174,174,152,31,31,255,44,31,44,31,31,44,44,31,31,174,44,44,31,31,44,44,31,31,31,31,44,31,31,31,31,31,31,31,31,31,44,31,31,31,44,44,44,44,44,44,44,174,174,174,44,31,31,31,31,31,44,44,31,31,31,31,31,31,31,31,31,31,255,255,255,44,255,31,31,31,44,44,44,44,31,44,31,44,44,44,44,44,44,44,31,31,31,31,31,44,44,44,44,44,44,44,44,152,31,174,174,44,44,255,44,44,44,44,44,44,44,44,31,255,31,44,31,44,31,44,255,255,44,44,44,44,44,44,44,44,31,31,31,174,174,255,44,44,255,31,31,255,255,31,44],
+g: [223,127,127,119,199,223,119,127,199,160,160,119,119,119,119,223,119,127,160,160,127,127,187,160,160,160,160,199,199,160,160,127,160,127,127,127,127,119,223,160,160,160,160,160,160,160,160,160,160,119,119,119,119,119,119,223,119,119,160,160,160,160,160,160,160,160,119,119,119,119,127,127,127,127,127,119,127,127,199,199,199,160,160,160,160,160,160,160,160,119,199,160,160,119,160,119,199,199,199,160,160,160,160,160,160,160,199,199,119,119,119,119,119,223,199,160,160,160,199,119,160,160,160,160,160,160,199,160,127,160,127,127,127,127,127,119,119,119,119,119,119,119,119,119,119,160,119,119,127,119,119,119,119,119,119,127,119,119,160,119,119,119,119,119,160,119,119,119,119,119,119,127,119,199,199,160,199,199,199,199,199,160,119,119,119,160,119,119,160,160,160,160,160,160,160,160,160,199,199,199,199,199,127,199,119,119,199,119,160,160,160,127,127,119,119,119,119,199,119,199,119,199,160,199,199,160,119,160,160,160,160,127,127,199,199,160,119,119,160,160,127,187,187,187,160,160,160,160,127,127,160,127,127,160,160,160,119,119,119,119,127,127,160,199,160,127,127,199,160,160,160,127,119,160,160,160,160,160,127,127,160,160,160,160,160,119,160,127,127,127,127,127,160,160,160,160,160,127,127,127,160,119,119,160,119,199,199,223,119,119,127,160,119,160,119,119,160,160,119,119,199,160,160,119,119,160,160,119,119,119,119,160,119,119,119,119,119,119,119,119,119,160,119,119,119,160,160,160,160,160,160,160,199,199,199,160,119,119,119,119,119,160,160,119,119,119,119,119,119,119,119,119,119,127,127,127,160,127,119,119,119,160,160,160,160,119,160,119,160,160,160,160,160,160,160,119,119,119,119,119,160,160,160,160,160,160,160,160,223,119,199,199,160,160,127,160,160,160,160,160,160,160,160,119,127,119,160,119,160,119,160,127,127,160,160,160,160,160,160,160,160,119,119,119,199,199,127,160,160,127,119,119,127,127,119,160],
+b: [138,14,14,180,232,138,180,14,232,44,44,180,180,180,180,138,180,14,44,44,14,14,120,44,44,44,44,232,232,44,44,14,44,14,14,14,14,180,138,44,44,44,44,44,44,44,44,44,44,180,180,180,180,180,180,138,180,180,44,44,44,44,44,44,44,44,180,180,180,180,14,14,14,14,14,180,14,14,232,232,232,44,44,44,44,44,44,44,44,180,232,44,44,180,44,180,232,232,232,44,44,44,44,44,44,44,232,232,180,180,180,180,180,138,232,44,44,44,232,180,44,44,44,44,44,44,232,44,14,44,14,14,14,14,14,180,180,180,180,180,180,180,180,180,180,44,180,180,14,180,180,180,180,180,180,14,180,180,44,180,180,180,180,180,44,180,180,180,180,180,180,14,180,232,232,44,232,232,232,232,232,44,180,180,180,44,180,180,44,44,44,44,44,44,44,44,44,232,232,232,232,232,14,232,180,180,232,180,44,44,44,14,14,180,180,180,180,232,180,232,180,232,44,232,232,44,180,44,44,44,44,14,14,232,232,44,180,180,44,44,14,120,120,120,44,44,44,44,14,14,44,14,14,44,44,44,180,180,180,180,14,14,44,232,44,14,14,232,44,44,44,14,180,44,44,44,44,44,14,14,44,44,44,44,44,180,44,14,14,14,14,14,44,44,44,44,44,14,14,14,44,180,180,44,180,232,232,138,180,180,14,44,180,44,180,180,44,44,180,180,232,44,44,180,180,44,44,180,180,180,180,44,180,180,180,180,180,180,180,180,180,44,180,180,180,44,44,44,44,44,44,44,232,232,232,44,180,180,180,180,180,44,44,180,180,180,180,180,180,180,180,180,180,14,14,14,44,14,180,180,180,44,44,44,44,180,44,180,44,44,44,44,44,44,44,180,180,180,180,180,44,44,44,44,44,44,44,44,138,180,232,232,44,44,14,44,44,44,44,44,44,44,44,180,14,180,44,180,44,180,44,14,14,44,44,44,44,44,44,44,44,180,180,180,232,232,14,44,44,14,180,180,14,14,180,44],
+},
+{
+r: [234,68,65,71,68,56,33,71,68,68,68,65,68,59,68,31,68,68,54,40,68,71,68,71,71,68,68,65,65,68,68,65,68,68,68,68,68,35,45,71,68,68,68,68,71,71,59,68,71,31,65,68,32,59,59,94,47,47,71,71,71,71,68,68,68,68,68,54,44,71,68,68,71,68,68,71,65,65,68,68,68,68,68,68,50,68,65,65,50,31,68,68,71,68,65,71,71,68,71,71,68,71,71,71,71,47,68,68,68,68,71,65,39,47,68,71,40,54,71,32,68,68,37,59,68,68,68,65,44,68,68,68,68,68,71,65,71,71,59,65,37,71,71,71,68,68,44,33,65,68,65,71,68,68,31,59,37,78,59,65,68,42,37,54,68,34,71,37,30,253,68,54,65,65,68,71,68,65,68,65,68,40,137,44,117,71,65,68,71,59,71,54,68,71,71,71,71,68,68,65,68,68,71,65,47,59,65,68,68,68,68,65,65,71,71,59,59,65,71,65,71,65,68,68,68,65,49,68,47,71,68,68,65,68,68,68,59,44,44,54,65,68,68,68,68,68,68,68,68,68,68,71,68,65,68,68,59,71,68,65,65,68,71,59,68,65,71,71,71,47,59,71,71,68,68,59,44,68,68,68,68,68,68,68,68,68,71,71,59,68,68,68,71,68,68,71,71,68,71,68,68,59,36,68,39,68,68,33,40,47,68,71,68,39,42,59,68,71,59,65,71,50,68,54,36,71,68,36,37,34,54,54,71,59,54,71,65,65,59,65,65,68,44,44,50,71,71,68,65,34,68,68,68,68,71,68,39,31,31,68,40,68,47,68,37,32,70,58,52,68,59,47,47,65,65,65,68,68,71,42,71,65,65,71,40,71,71,68,59,44,44,37,68,68,68,68,50,54,40,59,59,68,59,59,71,65,68,50,44,68,68,68,68,65,68,68,68,68,68,50,68,59,68,152,68,144,65,71,71,68,71,59,59,68,68,65,65,71,65,68,71,59,71,68,71,71,68,68,31,71,68,71,68,71,40,68],
+g: [229,1,66,44,1,185,165,44,1,1,1,66,1,81,1,158,1,1,93,124,1,44,1,44,44,1,1,66,66,1,1,66,1,1,1,1,1,138,178,44,1,1,1,1,44,44,81,1,44,161,66,1,146,81,81,201,108,108,44,44,44,44,1,1,1,1,1,93,113,44,1,1,44,1,1,44,66,66,1,1,1,1,1,1,101,1,66,66,101,161,1,1,44,1,66,44,44,1,44,44,1,44,44,44,44,108,1,1,1,1,44,66,128,108,1,44,124,93,44,163,1,1,131,81,1,1,1,66,113,1,1,1,1,1,44,66,44,44,81,66,131,44,44,44,1,1,113,165,66,1,66,44,1,1,158,81,171,195,81,66,1,119,171,93,1,168,44,171,156,231,1,93,66,66,1,44,1,66,1,66,1,124,213,113,208,44,66,1,44,81,44,93,1,44,44,44,44,1,1,66,1,1,44,66,108,81,66,1,1,1,1,66,66,44,44,81,81,66,44,66,44,66,1,1,1,66,181,1,108,44,1,1,66,1,1,1,81,113,113,93,66,1,1,1,1,1,1,1,1,1,1,44,1,66,1,1,81,44,1,66,66,1,44,81,1,66,44,44,44,108,81,44,44,1,1,81,113,1,1,1,1,1,1,1,1,1,44,44,81,1,1,1,44,1,1,44,44,1,44,1,1,81,170,1,128,1,1,144,124,108,1,44,1,128,119,81,1,44,81,66,44,101,1,93,135,44,1,135,131,141,93,93,44,81,93,44,66,66,81,66,66,1,113,113,101,44,44,1,66,141,1,1,1,1,44,1,128,154,154,1,124,1,108,1,131,146,192,186,182,1,81,108,108,66,66,66,1,1,44,119,44,66,66,44,124,44,44,191,81,113,113,131,1,1,1,1,101,93,124,81,81,1,81,81,44,66,1,101,113,1,1,1,1,66,1,1,1,1,1,101,1,81,1,216,1,215,66,44,44,1,44,81,81,1,1,66,66,44,66,1,44,81,44,1,44,44,1,1,151,44,1,44,1,44,124,1],
+b: [26,84,135,122,84,119,133,122,84,84,84,135,84,139,84,137,84,84,141,142,84,122,84,122,122,84,84,135,135,84,84,135,84,84,84,84,84,141,125,122,84,84,84,84,122,122,139,84,122,135,135,84,140,139,139,98,142,142,122,122,122,122,84,84,84,84,84,141,142,122,84,84,122,84,84,122,135,135,84,84,84,84,84,84,142,84,135,135,142,135,84,84,122,84,135,122,122,84,122,122,84,122,122,122,122,142,84,84,84,84,122,135,142,142,84,122,142,141,122,134,84,84,142,139,84,84,84,135,142,84,84,84,84,84,122,135,122,122,139,135,142,122,122,122,84,84,142,133,135,84,135,122,84,84,137,139,130,107,139,135,84,142,130,141,84,132,122,130,137,37,84,141,135,135,84,122,84,135,84,135,84,142,72,142,84,122,135,84,122,139,122,141,84,122,122,122,122,84,84,135,84,84,122,135,142,139,135,84,84,84,84,135,135,122,122,139,139,135,122,135,122,135,84,84,84,135,123,84,142,122,84,84,135,84,84,84,139,142,142,141,135,84,84,84,84,84,84,84,84,84,84,122,84,135,84,84,139,122,84,135,135,84,122,139,84,135,122,122,122,142,139,122,122,84,84,139,142,84,84,84,84,84,84,84,84,84,122,122,139,84,84,84,122,84,84,122,122,84,122,84,84,139,131,84,142,84,84,141,142,142,84,122,84,142,142,139,84,122,139,135,122,142,84,141,142,122,84,142,142,141,141,141,122,139,141,122,135,135,139,135,135,84,142,142,142,122,122,84,135,141,84,84,84,84,122,84,142,138,138,84,142,84,142,84,142,140,111,118,121,84,139,142,142,135,135,135,84,84,122,142,122,135,135,122,142,122,122,112,139,142,142,142,84,84,84,84,142,141,142,139,139,84,139,139,122,135,84,142,142,84,84,84,84,135,84,84,84,84,84,142,84,139,84,62,84,67,135,122,122,84,122,139,139,84,84,135,135,122,135,84,122,139,122,84,122,122,84,84,139,122,84,122,84,122,142,84],
+},
+]},
+small_mols_tree: {
+x: [315.127,310.27,315.127,322.874,440.922,436.887,341.796,351.177,341.796,335.041,392.365,387.509,344.662,359.038,355.66,359.038,375.043,384.975,375.043,382.356,375.043,372.83,375.043,367.749,375.043,359.038,375.043,382.011,119.687,125.424,421.41,417.557,256.903,254.158,256.903,259.409,410.206,398.047,410.206,422.853,396.709,398.047,351.177,362.818,331.307,335.041,214.285,209.404,179.612,176.57,153.296,149.888,153.296,159.379,237.917,238.168,108.59,114.657,108.59,104.476,282.587,280.405,302.221,306.108,168.072,179.253,168.072,159.379,168.072,164.387,259.374,257.32,259.374,261.054,259.374,254.417,150.917,153.197,99.247,87.234,99.247,95.53,99.247,114.657,261.054,261.374,228.651,231.279,266.827,280.405,266.827,272.722,266.827,249.934,375.296,379.867,375.296,367.437,367.437,368.02,367.437,358.113,679.787,682.762,679.787,675.109,231.279,229.839,231.279,231.964,506.911,508.929,280.405,289.561,280.405,285.482,178.837,187.077,178.837,174.309,401.684,389.813,401.684,412.808,412.808,425.094,412.808,417.557,663.007,669.549,663.007,655.287,669.549,675.109,655.287,646.127,740.639,740.559,582.718,584.506,457.609,462.339,630.485,625.766,625.766,618.388,609.97,600.516,609.97,618.388,731.77,727.526,727.526,722.255,744.021,744.027,745.242,738.534,745.242,749.787,738.534,731.282,744.027,737.991,744.027,748.125,737.991,731.282,737.991,736.596,731.282,722.007,459.024,454.701,614.781,616.713,616.713,617.609,583.323,579.758,583.323,588.531,48.873,69.869,48.873,41.709,48.873,35.682,69.869,90.83,69.869,66.934,69.869,70.769,478.659,479.479,176.57,173.83,176.57,175.978,197.453,197.844,197.453,196.481,302.861,316.209,302.861,287.97,316.209,328.43,249.934,232.568,213.428,214.178,230.662,232.568,485.382,481.466,481.466,478.678,481.466,484.093,478.678,474.878,508.929,512.469,388.728,389.813,469.928,474.878,469.928,464.311,155.69,158.815,155.69,153.197,155.69,155.969,578.778,584.506,162.125,166.057,605.302,602.065,161.136,166.057,185.556,174.83,185.556,187.917,185.556,222.297,185.556,158.815,185.556,175.947,185.556,197.844,166.057,174.83,175.947,167.904,174.83,170.336,174.83,177.468,170.336,181.437,170.336,153.175,153.175,137.725,181.437,175.978,181.437,192.702,175.978,168.678,134.211,137.725,137.725,134.524,137.725,125.424,177.892,181.364,181.364,187.107,396.924,394.139,394.139,384.975,158.853,163.034,163.034,167.904,591.344,594.57,577.482,578.284,577.482,575.755,697.776,693.488,435.469,436.887,376.655,380.699,376.655,363.102,376.655,367.539,376.655,394.139,512.469,511.388,512.469,515.25,571.84,576.032,197.844,209.404,216.745,209.404,216.745,220.339,584.999,589.305,583.051,589.305,589.489,589.305,736.586,732.951,736.586,739.106,216.968,219.327,230.573,235.507,230.573,222.297,24.796,16.178,24.796,35.682,348.751,339.216,348.751,358.113,328.65,328.43,339.216,328.43,408.454,404.121,393.314,379.327,393.314,404.121,409.119,404.121,388.452,387.509,387.509,382.011,382.356,388.646,367.749,360.397,125.424,121.628,360.397,351.048,351.542,362.818,351.542,339.578,351.048,339.578,351.048,352.731,422.853,421.416,422.853,435.371,435.504,435.371,435.371,446.485,446.485,454.701,446.485,447.843,114.657,133.887,327.334,323.54,327.334,331.49,331.49,335.838,323.54,320.85,379.327,383.102,379.327,362.818,398.047,387.069,334.666,335.838,339.578,310.855,339.578,338.453,335.838,338.453,355.658,350.982,355.658,362.818,362.818,363.95,470.607,475.285,470.607,464.311,87.234,79.077,444.441,433.669,444.441,453.71,474.91,474.667,479.199,474.667,462.29,469.182,462.29,453.71,474.667,469.182,283.174,310.855,283.174,254.417,310.855,311.372,197.605,198.347,254.158,234.382,254.158,248.139,254.158,281.066,272.722,276.907,229.839,228.717,238.168,242.669,246.803,248.139,242.669,248.139,179.253,182.582,179.253,214.178,179.253,155.513,231.964,252.259,231.964,214.178,74.377,79.077,214.178,232.568,232.568,234.382,598.118,602.065,519.565,517.976,577.07,600.516,577.07,576.032,577.07,554.627,554.627,532.269,341.499,338.889,138.78,145.608,138.78,132.143,145.608,153.197,436.516,433.669,425.406,421.946,740.559,739.106,461.09,460.801,576.032,575.755,517.976,532.269,517.976,505.396,606.678,605.478,532.269,522.403,577.694,579.758,132.143,126.78,132.143,132.755,624.624,632.208,624.624,626.488,624.624,614.275,126.78,124.0,233.887,238.168,209.713,209.404,158.815,133.802,158.815,153.298,153.298,149.203,133.802,111.403,168.678,163.95,306.108,302.578,306.108,307.713,287.97,271.21,271.21,252.259,338.889,335.404,354.168,352.731,299.065,297.134,299.065,302.221,220.424,222.297,225.65,222.297,222.297,254.417,354.034,350.377,354.034,359.878,359.878,367.539,367.539,368.771,255.838,252.259,614.328,618.623,614.328,607.019,337.705,339.19,337.705,335.404,447.114,456.411,447.114,436.887,373.82,374.52,374.52,374.929,387.069,374.929,374.929,362.818,227.933,228.717,232.908,228.717,224.043,228.717,133.887,155.513,281.066,307.713,436.887,425.094,228.717,227.247,227.247,225.998,307.713,335.404,388.646,391.335,192.702,202.593,748.125,750.0,601.745,605.18,433.669,421.946,421.946,394.139,421.946,441.918,614.275,602.065,233.388,228.321,228.321,219.327,260.998,259.409,635.968,632.208,90.83,111.403,223.297,213.426,223.297,231.259,213.426,202.593,231.259,236.233,29.785,32.054,32.054,36.093,36.093,41.709,215.737,234.382,215.737,198.347,71.318,70.769,602.822,607.019,492.429,487.904,599.214,594.677,599.214,605.621,153.197,158.609,607.019,608.434,607.019,603.293,607.019,605.18,607.019,606.463,605.18,602.065,657.28,659.291,626.456,622.796,622.796,635.249,622.796,617.609,622.796,618.388,618.388,619.624,694.807,693.488,713.105,722.007,713.105,703.791,606.463,605.478,604.29,605.478,600.516,612.379,612.379,605.621,612.379,605.478,612.379,635.239,609.818,605.478,605.478,594.368,635.239,658.392,658.392,659.291,658.392,681.487,659.291,662.589,522.403,522.668,522.403,508.259,505.396,493.103,508.259,506.854,508.259,493.935,493.103,479.479,606.335,600.639,606.335,611.918,588.576,588.531,600.639,594.57,594.57,597.503,594.57,588.531,602.065,589.305,611.918,617.609,611.918,612.191,4.54,0.0,4.54,4.458,4.54,9.674,580.83,580.275,580.83,576.111,580.83,589.305,589.305,586.478,589.305,593.182,66.934,62.93,66.934,68.124,202.593,211.339,202.593,194.405,584.506,594.368,584.506,580.216,646.127,635.249,161.754,158.609,187.107,194.405,478.429,481.083,481.083,470.102,481.083,493.935,462.339,470.102,520.0,517.758,520.0,523.987,520.0,521.632,521.632,522.668,462.167,456.411,462.167,466.531,456.411,464.311,219.327,211.339,219.327,223.11,219.327,223.402,732.951,728.104,722.255,728.104,722.255,714.217,714.217,704.643,708.26,704.643,704.643,693.488,703.791,693.417,693.488,681.487,685.137,681.487,693.417,681.487,464.095,460.801,460.801,479.479,460.801,441.918,479.479,487.904,487.904,491.808,185.185,190.272,190.272,198.347,187.077,198.347,486.052,484.093,457.023,453.71,292.782,289.561,16.178,9.674,227.081,229.281,227.081,223.402,517.741,515.25,517.741,520.0,151.77,155.513,389.813,376.796,389.813,393.964,376.376,376.796,376.796,363.102,376.796,381.166,366.7,363.102,363.102,335.404,368.925,367.183,367.183,364.732,364.732,362.818,332.766,322.874,332.766,344.662,335.404,338.785,186.66,185.172,185.172,182.582],
+y: [341.937,342.595,341.937,340.714,105.201,103.804,529.527,519.615,529.527,536.599,348.378,346.946,336.663,333.945,335.566,333.945,331.989,301.517,331.989,327.989,331.989,334.544,331.989,361.673,331.989,333.945,331.989,340.452,475.092,475.313,132.724,131.369,175.517,179.432,175.517,171.042,576.061,565.979,576.061,582.854,570.359,565.979,519.615,506.218,540.506,536.599,362.727,363.939,499.606,496.508,80.452,76.613,80.452,87.187,222.358,217.11,127.94,130.164,127.94,125.816,101.059,104.689,217.248,207.835,96.621,107.351,96.621,87.187,96.621,94.855,420.992,423.655,420.992,428.882,420.992,414.272,323.498,326.469,137.371,142.641,137.371,139.342,137.371,130.164,428.882,433.612,58.858,61.255,112.544,104.689,112.544,115.956,112.544,119.051,1.734,0.0,1.734,4.103,4.103,0.232,4.103,7.279,494.992,498.493,494.992,489.506,61.255,45.524,61.255,77.331,507.702,502.854,104.689,98.346,104.689,105.816,185.049,179.138,185.049,188.236,149.377,168.87,149.377,131.919,131.919,117.524,131.919,131.369,473.19,482.094,473.19,463.07,482.094,489.506,463.07,451.977,155.617,160.344,250.719,255.198,417.203,416.134,392.07,393.492,393.492,396.159,367.967,339.067,367.967,396.159,213.268,214.558,214.558,217.026,382.647,378.853,350.936,352.671,350.936,349.805,352.671,354.565,378.853,367.44,378.853,387.51,367.44,354.565,367.44,370.849,354.565,341.979,601.707,598.933,458.734,455.42,455.42,450.769,551.354,559.001,551.354,540.688,322.189,330.288,322.189,309.821,322.189,327.991,330.288,340.319,330.288,335.816,330.288,324.117,318.775,315.048,496.508,500.454,496.508,489.893,372.34,377.59,372.34,368.341,35.867,29.428,35.867,43.954,29.428,24.411,119.051,125.638,100.508,103.779,128.249,125.638,13.995,15.153,15.153,24.717,15.153,7.439,24.717,34.956,502.854,493.524,164.724,168.87,46.143,34.956,46.143,58.954,346.529,366.647,346.529,326.469,346.529,343.178,253.407,255.198,429.767,426.834,148.03,146.29,425.233,426.834,392.795,425.315,392.795,395.215,392.795,401.839,392.795,366.647,392.795,395.316,392.795,377.59,426.834,425.315,395.316,397.64,425.315,457.859,425.315,427.833,457.859,484.685,457.859,464.339,464.339,470.755,484.685,489.893,484.685,510.686,489.893,490.484,473.642,470.755,470.755,468.211,470.755,475.313,561.234,557.693,557.693,551.83,274.262,271.801,271.801,301.517,401.058,399.517,399.517,397.64,528.278,525.713,369.779,373.636,369.779,364.74,271.251,269.941,100.621,103.804,243.294,242.028,243.294,212.78,243.294,248.156,243.294,271.801,493.524,497.051,493.524,481.48,357.365,357.761,377.59,363.939,354.574,363.939,354.574,349.952,123.883,127.684,127.694,127.684,122.201,127.684,177.45,188.756,177.45,167.879,577.751,574.081,399.45,398.224,399.45,401.839,334.394,341.163,334.394,327.991,11.699,17.585,11.699,7.279,21.146,24.411,17.585,24.411,513.303,510.678,509.565,508.139,509.565,510.678,508.753,510.678,351.569,346.946,346.946,340.452,327.989,325.063,361.673,388.715,475.313,479.275,388.715,415.608,473.062,506.218,473.062,440.734,415.608,440.734,415.608,411.835,582.854,586.391,582.854,588.836,592.525,588.836,588.836,594.459,594.459,598.933,594.459,598.124,130.164,123.096,466.275,471.59,466.275,459.769,459.769,452.114,471.59,475.081,508.139,509.517,508.139,506.218,565.979,550.925,454.782,452.114,440.734,433.701,440.734,445.992,452.114,445.992,508.491,509.657,508.491,506.218,506.218,509.767,58.421,58.322,58.421,58.954,142.641,146.445,240.389,254.973,240.389,227.552,192.014,197.001,194.243,197.001,215.608,205.482,215.608,227.552,197.001,205.482,424.142,433.701,424.142,414.272,433.701,430.725,173.609,169.954,179.432,155.579,179.432,193.872,179.432,188.474,115.956,118.356,45.524,31.226,217.11,206.866,197.283,193.872,206.866,193.872,107.351,104.568,107.351,103.779,107.351,115.794,77.331,65.215,77.331,103.779,148.663,146.445,103.779,125.638,125.638,155.579,147.496,146.29,358.039,360.75,350.924,339.067,350.924,357.761,350.924,362.014,362.014,373.645,191.941,195.618,300.072,311.667,300.072,290.215,311.667,326.469,252.383,254.973,270.813,270.802,160.344,167.879,302.655,299.21,357.761,364.74,360.75,373.645,360.75,345.917,259.482,263.743,373.645,396.435,563.45,559.001,290.215,282.575,290.215,286.405,128.083,121.127,128.083,124.675,128.083,136.78,282.575,278.273,220.412,217.11,359.288,363.939,366.647,358.188,366.647,368.262,368.262,369.879,358.188,349.47,490.484,491.395,207.835,207.776,207.835,197.906,43.954,53.743,53.743,65.215,195.618,203.23,408.498,411.835,224.481,228.873,224.481,217.248,405.385,401.839,404.396,401.839,401.839,414.272,259.784,262.934,259.784,254.642,254.642,248.156,248.156,251.305,63.463,65.215,201.672,203.114,201.672,201.9,208.438,212.208,208.438,203.23,88.513,73.656,88.513,103.804,545.33,540.537,540.537,532.538,550.925,532.538,532.538,506.218,26.737,31.226,28.71,31.226,30.007,31.226,123.096,115.794,188.474,197.906,103.804,117.524,31.226,19.925,19.925,14.329,197.906,203.23,325.063,321.773,510.686,535.847,387.51,392.232,172.712,173.847,254.973,270.802,270.802,271.801,270.802,285.033,136.78,146.29,581.184,578.782,578.782,574.081,167.432,171.042,117.172,121.127,340.319,349.47,533.519,534.595,533.519,532.703,534.595,535.847,532.703,532.225,287.552,292.017,292.017,299.656,299.656,309.821,162.664,155.579,162.664,169.954,319.874,324.117,202.91,201.9,316.557,314.867,300.483,300.21,300.483,300.84,326.469,319.642,201.9,198.44,201.9,197.83,201.9,173.847,201.9,232.038,173.847,146.29,303.036,299.084,427.624,428.116,428.116,440.223,428.116,450.769,428.116,396.159,396.159,399.209,266.392,269.941,329.288,341.979,329.288,316.436,232.038,263.743,267.236,263.743,339.067,300.722,300.722,300.84,300.722,263.743,300.722,297.578,263.905,263.743,263.743,259.012,297.578,293.305,293.305,299.084,293.305,288.4,299.084,302.173,396.435,416.179,396.435,400.185,345.917,331.389,400.185,403.139,400.185,405.329,331.389,315.048,492.167,509.669,492.167,472.565,544.77,540.688,509.669,525.713,525.713,528.435,525.713,540.688,146.29,127.684,472.565,450.769,472.565,476.392,354.44,356.405,354.44,359.109,354.44,347.995,113.586,107.817,113.586,109.135,113.586,127.684,127.684,130.962,127.684,125.103,335.816,338.168,335.816,340.001,535.847,555.626,535.847,544.363,255.198,259.012,255.198,257.696,451.977,440.223,315.601,319.642,551.83,544.363,412.381,409.697,409.697,413.665,409.697,405.329,416.134,413.665,450.974,454.106,450.974,452.56,450.974,434.265,434.265,416.179,75.196,73.656,75.196,76.531,73.656,58.954,574.081,555.626,574.081,573.962,574.081,587.75,188.756,201.767,217.026,201.767,217.026,233.687,233.687,251.135,249.292,251.135,251.135,269.941,316.436,302.858,269.941,288.4,289.432,288.4,302.858,288.4,296.717,299.21,299.21,315.048,299.21,285.033,315.048,314.867,314.867,311.992,168.228,168.801,168.801,169.954,179.138,169.954,3.122,7.439,225.703,227.552,94.264,98.346,341.163,347.995,596.87,601.707,596.87,587.75,467.457,481.48,467.457,450.974,117.532,115.794,168.87,190.53,168.87,167.104,186.588,190.53,190.53,212.78,190.53,190.291,211.449,212.78,212.78,203.23,488.837,492.821,492.821,498.794,498.794,506.218,338.952,340.714,338.952,336.663,203.23,201.532,96.496,100.197,100.197,104.568],
+z: [375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0],
+},
+};
+
+    </script>
+    
+    <script>
+
+      //status on whether to show or not the background canvas
+      let FullMolinBkg = false;
+
+      class Faerun {
+        constructor() {
+          this.body = document.getElementsByTagName('body')[0];
+
+          this.selectedItems = [];
+          this.selectedIndicators = [];
+          this.selectedCurrent = [];
+          this.scatterMeta = [{"categorical": [true, false], "fog_intensity": 0.0, "has_legend": [true, false], "interactive": true, "is_range": [false, true], "label_index": [0, 0], "legend": [[[[0.12156862745098039, 0.4666666666666667, 0.7058823529411765, 1.0], "Animalia"], [[0.6823529411764706, 0.7803921568627451, 0.9098039215686274, 1.0], "Bacteria"], [[1.0, 0.4980392156862745, 0.054901960784313725, 1.0], "Fungi"], [[1.0, 0.7333333333333333, 0.47058823529411764, 1.0], "Mixed"], [[0.17254901960784313, 0.6274509803921569, 0.17254901960784313, 1.0], "Plantae"], [[0.596078431372549, 0.8745098039215686, 0.5411764705882353, 1.0], "Plantae and Animalia"]], [[[0.993248, 0.906157, 0.143936, 1.0], "5.3612921657094255"], [[0.974417, 0.90359, 0.130215, 1.0], "0.0"], [[0.945636, 0.899815, 0.112838, 1.0], "0.0"], [[0.926106, 0.89733, 0.104071, 1.0], "1.3862943611198906"], [[0.89632, 0.893616, 0.096335, 1.0], "1.6094379124341003"], [[0.866013, 0.889868, 0.095953, 1.0], "0.0"], [[0.845561, 0.887322, 0.099702, 1.0], "1.0986122886681098"], [[0.814576, 0.883393, 0.110347, 1.0], "1.0986122886681098"], [[0.79376, 0.880678, 0.120005, 1.0], "0.0"], [[0.762373, 0.876424, 0.137064, 1.0], "0.0"], [[0.730889, 0.871916, 0.156029, 1.0], "0.6931471805599453"], [[0.709898, 0.868751, 0.169257, 1.0], "1.0986122886681098"], [[0.678489, 0.863742, 0.189503, 1.0], "1.3862943611198906"], [[0.657642, 0.860219, 0.203082, 1.0], "0.6931471805599453"], [[0.626579, 0.854645, 0.223353, 1.0], "0.0"], [[0.595839, 0.848717, 0.243329, 1.0], "2.0794415416798357"], [[0.575563, 0.844566, 0.256415, 1.0], "0.6931471805599453"], [[0.545524, 0.838039, 0.275626, 1.0], "1.0986122886681098"], [[0.515992, 0.831158, 0.294279, 1.0], "0.0"], [[0.496615, 0.826376, 0.306377, 1.0], "1.0986122886681098"], [[0.468053, 0.818921, 0.323998, 1.0], "0.0"], [[0.449368, 0.813768, 0.335384, 1.0], "0.6931471805599453"], [[0.421908, 0.805774, 0.35191, 1.0], "0.0"], [[0.395174, 0.797475, 0.367757, 1.0], "0.6931471805599453"], [[0.377779, 0.791781, 0.377939, 1.0], "0.0"], [[0.35236, 0.783011, 0.392636, 1.0], "1.9459101490553132"], [[0.335885, 0.777018, 0.402049, 1.0], "0.6931471805599453"], [[0.311925, 0.767822, 0.415586, 1.0], "1.3862943611198906"], [[0.288921, 0.758394, 0.428426, 1.0], "1.0986122886681098"], [[0.274149, 0.751988, 0.436601, 1.0], "0.0"], [[0.252899, 0.742211, 0.448284, 1.0], "0.6931471805599453"], [[0.239374, 0.735588, 0.455688, 1.0], "0.6931471805599453"], [[0.220124, 0.725509, 0.466226, 1.0], "0.0"], [[0.202219, 0.715272, 0.476084, 1.0], "1.0986122886681098"], [[0.19109, 0.708366, 0.482284, 1.0], "1.3862943611198906"], [[0.175707, 0.6979, 0.491033, 1.0], "1.0986122886681098"], [[0.162016, 0.687316, 0.499129, 1.0], "0.0"], [[0.153894, 0.680203, 0.504172, 1.0], "3.044522437723423"], [[0.143303, 0.669459, 0.511215, 1.0], "1.0986122886681098"], [[0.137339, 0.662252, 0.515571, 1.0], "1.0986122886681098"], [[0.130067, 0.651384, 0.521608, 1.0], "4.553876891600541"], [[0.12478, 0.640461, 0.527068, 1.0], "1.0986122886681098"], [[0.122312, 0.633153, 0.530398, 1.0], "1.6094379124341003"], [[0.120081, 0.622161, 0.534946, 1.0], "0.6931471805599453"], [[0.119483, 0.614817, 0.537692, 1.0], "0.0"], [[0.119738, 0.603785, 0.5414, 1.0], "1.3862943611198906"], [[0.121148, 0.592739, 0.544641, 1.0], "0.0"], [[0.122606, 0.585371, 0.546557, 1.0], "0.6931471805599453"], [[0.125394, 0.574318, 0.549086, 1.0], "0.6931471805599453"], [[0.127568, 0.566949, 0.550556, 1.0], "0.0"], [[0.131172, 0.555899, 0.552459, 1.0], "0.0"], [[0.135066, 0.544853, 0.554029, 1.0], "1.0986122886681098"], [[0.13777, 0.537492, 0.554906, 1.0], "2.0794415416798357"], [[0.141935, 0.526453, 0.555991, 1.0], "0.0"], [[0.14618, 0.515413, 0.556823, 1.0], "0.0"], [[0.149039, 0.508051, 0.55725, 1.0], "0.0"], [[0.153364, 0.497, 0.557724, 1.0], "0.0"], [[0.15627, 0.489624, 0.557936, 1.0], "1.0986122886681098"], [[0.160665, 0.47854, 0.558115, 1.0], "0.0"], [[0.165117, 0.467423, 0.558141, 1.0], "1.9459101490553132"], [[0.168126, 0.459988, 0.558082, 1.0], "0.0"], [[0.172719, 0.448791, 0.557885, 1.0], "0.0"], [[0.175841, 0.44129, 0.557685, 1.0], "0.0"], [[0.180629, 0.429975, 0.557282, 1.0], "0.6931471805599453"], [[0.185556, 0.41857, 0.556753, 1.0], "0.0"], [[0.188923, 0.41091, 0.556326, 1.0], "0.6931471805599453"], [[0.1941, 0.399323, 0.555565, 1.0], "0.0"], [[0.19943, 0.387607, 0.554642, 1.0], "0.0"], [[0.203063, 0.379716, 0.553925, 1.0], "0.0"], [[0.208623, 0.367752, 0.552675, 1.0], "2.1972245773362196"], [[0.212395, 0.359683, 0.55171, 1.0], "1.0986122886681098"], [[0.21813, 0.347432, 0.550038, 1.0], "1.6094379124341003"], [[0.223925, 0.334994, 0.548053, 1.0], "2.4849066497880004"], [[0.227802, 0.326594, 0.546532, 1.0], "0.6931471805599453"], [[0.233603, 0.313828, 0.543914, 1.0], "1.0986122886681098"], [[0.237441, 0.305202, 0.541921, 1.0], "0.0"], [[0.243113, 0.292092, 0.538516, 1.0], "0.6931471805599453"], [[0.248629, 0.278775, 0.534556, 1.0], "0.0"], [[0.252194, 0.269783, 0.531579, 1.0], "0.0"], [[0.257322, 0.25613, 0.526563, 1.0], "2.302585092994046"], [[0.260571, 0.246922, 0.522828, 1.0], "2.4849066497880004"], [[0.265145, 0.232956, 0.516599, 1.0], "0.0"], [[0.269308, 0.218818, 0.509577, 1.0], "1.0986122886681098"], [[0.271828, 0.209303, 0.504434, 1.0], "0.6931471805599453"], [[0.275191, 0.194905, 0.496005, 1.0], "0.6931471805599453"], [[0.278012, 0.180367, 0.486697, 1.0], "3.8918202981106265"], [[0.279574, 0.170599, 0.479997, 1.0], "0.0"], [[0.281412, 0.155834, 0.469201, 1.0], "1.791759469228055"], [[0.28229, 0.145912, 0.46151, 1.0], "0.0"], [[0.283072, 0.130895, 0.449241, 1.0], "1.0986122886681098"], [[0.283197, 0.11568, 0.436115, 1.0], "0.0"], [[0.28291, 0.105393, 0.426902, 1.0], "0.0"], [[0.281924, 0.089666, 0.412415, 1.0], "1.791759469228055"], [[0.280894, 0.078907, 0.402329, 1.0], "0.0"], [[0.278791, 0.062145, 0.386592, 1.0], "0.6931471805599453"], [[0.276022, 0.044167, 0.370164, 1.0], "0.0"], [[0.273809, 0.031497, 0.358853, 1.0], "0.6931471805599453"], [[0.269944, 0.014625, 0.341379, 1.0], "0.6931471805599453"], [[0.267004, 0.004874, 0.329415, 1.0], "0.0"]]], "legend_title": ["kingdom_name", "kingdom_name"], "mapping": {"c": "c", "cs": "cs", "knn": "knn", "labels": "labels", "s": "s", "x": "x", "y": "y", "z": "z"}, "max_c": [5.0, 5.54907608489522], "max_legend_label": ["5.00", "5.55"], "max_point_size": 400, "min_c": [0.0, 0.0], "min_legend_label": ["0.00", "0.00"], "name": "kingdom_name", "ondblclick": [null, null], "point_scale": 10.0, "selected_labels": [null, null], "series_title": ["Kingdom name", "Num. of occurences"], "shader": "smoothCircle", "title_index": [0, 0]}];
+          this.treeMeta = [{"color": "#666666", "fog_intensity": 0.0, "mapping": {"c": "c", "from": "from", "to": "to", "x": "x", "y": "y", "z": "z"}, "name": "small_mols_tree", "point_helper": "kingdom_name"}];
+          this.seriesState = {};
+          this.el = {};
+
+          this.currentPoint = null;
+
+          this.lore = null;
+          this.clearColorHex = '#FFFFFF';
+          this.clearColor = null;
+          this.view = 'front';
+          this.antiAliasing = true;
+          this.alphaBlending = false;
+          this.thumbnailWidth = 250;
+          this.thumbnailFixed = false;
+
+          this.treeHelpers = [];
+          this.pointHelpers = [];
+          this.octreeHelpers = [];
+          this.coordinatesHelper = null;
+
+          this.ohIndexToPhName = [];
+          this.ohIndexToPhIndex = [];
+          this.phIndexMap = {};
+          this.ohIndexMap = {};
+
+          this.min = [Number.MAX_VALUE, Number.MAX_VALUE, Number.MAX_VALUE];
+          this.max = [-Number.MAX_VALUE, -Number.MAX_VALUE, -Number.MAX_VALUE];
+          this.maxRadius = -Number.MAX_VALUE;
+
+          this.coords = {
+            show: false,
+            grid: false,
+            ticks: true,
+            tickCount: 10,
+            tickLength: 2.0,
+            color: '#888888',
+            box: false,
+            offset: 5.0
+          };
+
+          this.legend = {
+            show: true,
+            title: 'Legend'
+          };
+
+          
+          this.sdMolOpts = {
+            width: this.thumbnailWidth / window.devicePixelRatio,
+            height: this.thumbnailWidth / window.devicePixelRatio,
+            experimental: true
+          }
+
+          this.sdSelected = new SmiDrawer(this.sdMolOpts);
+
+          if (this.thumbnailFixed) {
+            this.sdMolOpts = {
+              scale: 0.75,
+              experimental: true
+            }
+          }
+
+          this.sd = new SmiDrawer(this.sdMolOpts);
+
+          this.el = Faerun.bindElements();
+
+          this.scatterMeta.forEach(s => {
+            this.seriesState[s.name] = 0;
+          });
+
+          this.clearColor = Lore.Core.Color.fromHex(this.clearColorHex);
+          this.alphaBlending = (this.view === 'free' ? false : true) || this.alphaBlending;
+
+          this.initLore();
+          this.initTreeHelpers();
+          this.initPointHelpers();
+          this.initCoords();
+          this.initAxes();
+          this.initView();
+          this.initEvents();
+          this.renderLegend();
+        }
+
+        initLore() {
+          this.lore = Lore.init('lore', {
+            antialiasing: this.antiAliasing,
+            clearColor: this.clearColorHex,
+            alphaBlending: this.alphaBlending,
+            preserveDrawingBuffer: true
+          });
+        }
+
+        initTreeHelpers() {
+          this.treeMeta.forEach(t => {
+            let th = new Lore.Helpers.TreeHelper(this.lore, t.name, 'tree');
+            th.setXYZHexS(data[t.name].x, data[t.name].y, data[t.name].z, t.color);
+            th.setFog([this.clearColor.components[0], this.clearColor.components[1], 
+                       this.clearColor.components[2], this.clearColor.components[3]],
+                      t.fog_intensity);
+            this.treeHelpers.push(th);
+          });
+        }
+
+        initPointHelpers() {
+          this.scatterMeta.forEach(s => {           
+            let ph = new Lore.Helpers.PointHelper(
+              this.lore, s.name, s.shader, { maxPointSize: s.max_point_size }
+            );
+
+            ph.setXYZRGBS(data[s.name].x, data[s.name].y, data[s.name].z, 
+                          data[s.name]['colors'][0].r, data[s.name]['colors'][0].g, 
+                          data[s.name]['colors'][0].b, data[s.name]['s'] ? data[s.name]['s'][0] : 1.0);
+
+            ph.setPointScale(s.point_scale);
+            ph.setFog([this.clearColor.components[0], this.clearColor.components[1],
+                       this.clearColor.components[2], this.clearColor.components[3]],
+                      s.fog_intensity)
+
+            this.phIndexMap[s.name] = this.pointHelpers.length;
+            this.pointHelpers.push(ph);
+
+            this.min[0] = Faerun.getMin(data[s.name].x, this.min[0]);
+            this.min[1] = Faerun.getMin(data[s.name].y, this.min[1]);
+            this.min[2] = Faerun.getMin(data[s.name].z, this.min[2]);
+            this.max[0] = Faerun.getMax(data[s.name].x, this.max[0]);
+            this.max[1] = Faerun.getMax(data[s.name].y, this.max[1]);
+            this.max[2] = Faerun.getMax(data[s.name].z, this.max[2]);
+            this.maxRadius = ph.getMaxRadius();
+    
+            if (s.interactive && data[s.name].labels) {
+              this.octreeHelpers.push(
+                new Lore.Helpers.OctreeHelper(this.lore, 'Octree_' + s.name, 'tree', ph)
+              );
+
+              this.ohIndexMap[s.name] = this.octreeHelpers.length - 1;
+              this.ohIndexToPhName.push(s.name);
+              this.ohIndexToPhIndex.push(this.phIndexMap[s.name]);
+            }
+          });
+        }
+
+        initCoords() {
+          if (!this.coords.show) return;
+
+          let min = [0, 0, 0];
+          let max = [0, 0, 0];
+
+          for (var i = 0; i < 3; i++) {
+            min[i] = this.min[i] - this.coords.offset;
+            max[i] = this.max[i] + this.coords.offset;
+          }
+
+          this.coordinatesHelper = new Lore.Helpers.CoordinatesHelper(this.lore, 'Coordinates', 'coordinates', {
+            position: new Lore.Math.Vector3f(min[0], min[1], min[2]),
+            axis: {
+              x: {
+                length: max[0] - min[0],
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              },
+              y: {
+                length: max[1] - min[1],
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              },
+              z: {
+                length: max[2] - min[2],
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              }
+            },
+            ticks: {
+              enabled: this.coords.ticks,
+              x: {
+                length: this.coords.tickLength,
+                color: Lore.Core.Color.fromHex(this.coords.color),
+                count: this.coords.tickCount
+              },
+              y: {
+                length: this.coords.tickLength,
+                color: Lore.Core.Color.fromHex(this.coords.color),
+                count: this.coords.tickCount
+              },
+              z: {
+                length: this.coords.tickLength,
+                color: Lore.Core.Color.fromHex(this.coords.color),
+                count: this.coords.tickCount
+              }
+            },
+            box: {
+              enabled: this.coords.box,
+              x: {
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              },
+              y: {
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              },
+              z: {
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              }
+            }
+          });
+        }
+
+        initAxes() {
+          // Wait for DOM to get ready
+          setTimeout(() => {
+            this.updateTitle(true);
+            this.updateXAxis(true);
+            this.updateYAxis(true);
+          }, 500);
+        }
+
+        initView() {
+          let center = new Lore.Math.Vector3f(
+              (this.max[0] + this.min[0]) / 2.0, 
+              (this.max[1] + this.min[1]) / 2.0, 
+              (this.max[2] + this.min[2]) / 2.0
+            );
+          this.lore.controls.setLookAt(center);
+          this.lore.controls.setRadius(this.maxRadius + 100);
+          this.lore.controls.setView(0.9, -0.5)
+          this.lore.controls.setViewByName(this.view);
+        }
+
+        initEvents() {
+          this.lore.controls.addEventListener('updated', () => {
+            // Update the position / content of the annotations every time
+            // the view changes
+            this.updateTitle();
+            this.updateYAxis();
+            this.updateXAxis();
+            this.updateSelectedIndicators();
+          });
+
+          Lore.Helpers.OctreeHelper.joinHoveredChanged(this.octreeHelpers, e => {
+            let phName = this.ohIndexToPhName[e.source];
+            if (e.e && data[phName].labels) {
+              let fullLabel = data[phName].labels[e.e.index];
+              let labelIndex = this.scatterMeta[this.ohIndexToPhIndex[e.source]]
+                                  .label_index[this.seriesState[phName]];
+              let titleIndex = this.scatterMeta[this.ohIndexToPhIndex[e.source]]
+                                  .title_index[this.seriesState[phName]];
+
+              let rgbColor = this.pointHelpers[e.source].getColor(e.e.index);
+              let hexColor = Lore.Core.Color.rgbToHex(rgbColor[0], rgbColor[1], rgbColor[2]);
+
+              this.currentPoint = {
+                index: e.e.index,
+                fullLabel: fullLabel.split('__'),
+                source: phName,
+                label: fullLabel.split('__')[labelIndex],
+                color: hexColor,
+                labelIndex: labelIndex,
+                titleIndex: titleIndex
+              }
+              
+              if (FullMolinBkg == true) {
+
+                document.getElementById("overlay-structure-container").style.visibility = "visible";
+
+                var overlayStruc_Width = document.getElementById("overlay-structure-container").offsetWidth
+                var overlayStruc_Height = document.getElementById("overlay-structure-container").offsetHeight
+
+                if (overlayStruc_Width > overlayStruc_Height) {overlayStruc_Width = overlayStruc_Height}
+
+                this.sd = new SmiDrawer({
+                  width: overlayStruc_Width / window.devicePixelRatio,
+                  height: overlayStruc_Width / window.devicePixelRatio,
+                  bondThickness: 1.4,
+                  experimental: true
+                });
+
+                this.setTipContent();
+                this.sd = new SmiDrawer(this.sdMolOpts);
+              } else {
+
+                document.getElementById("overlay-structure-container").style.visibility = "hidden";
+                this.setTipContent__();
+
+                this.el.tip.classList.add('show');
+
+                let pointSize = this.pointHelpers[e.source].getPointSize() / window.devicePixelRatio;
+                let x = e.e.screenPosition[0];
+                let y = e.e.screenPosition[1];
+
+                this.el.hoverIndicator.style.width = pointSize + 'px';
+                this.el.hoverIndicator.style.height = pointSize + 'px';
+                this.el.hoverIndicator.style.left = (x - pointSize / 2.0 - 1) + 'px';
+                this.el.hoverIndicator.style.top = (y - pointSize / 2.0 - 1) + 'px';
+
+                this.el.hoverIndicator.classList.add('show');
+                }
+
+            } else {
+              this.currentPoint = null;
+              this.el.tip.classList.remove('show');
+              this.el.hoverIndicator.classList.remove('show');
+            }
+          });
+
+          Lore.Helpers.OctreeHelper.joinSelectedChanged(this.octreeHelpers, items => {
+            this.selectedItems = items;
+            this.updateSelected();
+          });
+
+          Lore.Helpers.OctreeHelper.joinReselected(this.octreeHelpers, item => {
+            this.updateSelected(
+              this.getSelectedIndex(item[0].source, item[0].item.e.index)
+            );
+          });
+
+          // Event listeners
+          this.el.selectedPrev.addEventListener('click', e => {
+            e.preventDefault();
+            this.updateSelected(this.selectedCurrent - 1);
+            return false;
+          });
+
+          this.el.selectedNext.addEventListener('click', e => {
+            e.preventDefault();
+            this.updateSelected(this.selectedCurrent + 1);
+            return false;
+          });
+
+          this.el.selectedRemove.addEventListener('click', e => {
+            e.preventDefault();
+            let item = this.selectedItems[this.selectedCurrent]
+            this.octreeHelpers[item.source].removeSelected(item.index);
+            return false;
+          });
+
+          document.addEventListener('dblclick', e => {
+            if (this.currentPoint) {
+              var index = this.currentPoint.index;
+              var labels = this.currentPoint.label.split('__');
+              var source = this.currentPoint.source;
+              eval(this.scatterMeta[this.phIndexMap[source]].ondblclick[this.seriesState[source]]);
+            }
+          });
+
+          document.addEventListener('mousemove', e => {
+            if (FullMolinBkg == false) {
+              document.getElementById("tip").style.visibility = "visible";
+
+              if (!this.thumbnailFixed) {
+                let x = e.clientX;
+                let y = e.clientY;
+
+                if (x > window.innerWidth - this.el.tip.offsetWidth - 20) {
+                  x -= this.el.tip.offsetWidth;
+                } else {
+                  x += 10;
+                }
+
+                if (y > window.innerHeight - this.el.tip.offsetHeight - 20) {
+                  y -= this.el.tip.offsetHeight;
+                } else {
+                  y += 10;
+                }
+
+                if (this.el.tip) {
+                  this.el.tip.style.top = y + 'px';
+                  this.el.tip.style.left = x + 'px';
+                }
+              }
+            } else {
+              document.getElementById("tip").style.visibility = "hidden";
+            }
+          });
+
+          this.el.selectedToggle.addEventListener('click', e => {
+            this.el.selectedContainer.classList.toggle('hide');
+            if (this.el.selectedContainer.classList.contains('hide'))
+              this.el.selectedToggle.innerHTML = '<i class="fas fa-toggle-off"></i>';
+            else
+              this.el.selectedToggle.innerHTML = '<i class="fas fa-toggle-on"></i>';
+            
+            e.preventDefault();
+            return false;
+          });
+
+          this.el.showControls.addEventListener('click', e => {
+            this.el.moreControls.classList.toggle('hide');
+            e.preventDefault();
+            return false;
+          });
+
+          this.el.search.addEventListener('click', e => {
+            let searchTerm = prompt('Please enter a search term:', '');
+            const results = this.search(searchTerm);
+
+            for (const [name, indices] of Object.entries(results)) {
+              if (!name in this.ohIndexMap) return;
+              indices.forEach(index => {
+                this.octreeHelpers[this.ohIndexMap[name]].addSelected(index);
+              });
+            }
+            
+            e.preventDefault();
+            return false;
+          });
+
+          window.addEventListener('keydown', e => {
+            if ((e.keyCode == 114) || (e.ctrlKey && e.keyCode == 70)) {
+              this.search();
+              e.preventDefault();
+              return false;
+            }
+          });
+
+          this.el.export.addEventListener('click', e => {
+            e.preventDefault();
+
+            let canvas = document.getElementById('lore');
+            let zoom = this.lore.controls.getZoom();
+
+            canvas.style.width = (canvas.width * 2) + 'px';
+            canvas.style.height = (canvas.height * 2) + 'px';
+            this.lore.controls.setZoom(zoom * 2);
+
+            setTimeout(() => {
+              let blob = this.lore.canvas.toBlob(blob => {
+                let a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.setAttribute('download', 'export.png');
+                a.click();
+                
+                setTimeout(() => {
+                  canvas.style.width = '100%';
+                  canvas.style.height = '100%';
+                  lore.controls.setZoom(zoom);
+                }, 2000);
+              });
+            }, 2000);
+          });
+
+          this.el.download.addEventListener('click', e => {
+            e.preventDefault();
+
+            let text = ''
+            this.selectedItems.forEach(item => {
+              let phIndex = this.ohIndexToPhIndex[item.source];
+              let meta = this.scatterMeta[phIndex];
+              let phName = this.ohIndexToPhName[item.source];
+              let seriesState = this.seriesState[phName];
+
+              let fullLabel = data[phName].labels[item.item.index].split('__');
+
+              let labelIndex = meta.label_index[seriesState];
+              let titleIndex = meta.title_index[seriesState];
+              let selectedLabels = meta.selected_labels[seriesState];
+
+              fullLabel.forEach((l, i) => {
+                text += l + ';'
+              });
+              text = text.slice(0, -1); 
+              text += '\n';
+            });
+
+            var a = document.createElement('a');
+            a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            a.setAttribute('download', 'faerun_list.csv');
+
+            a.style.display = 'none';
+            document.body.appendChild(a);
+
+            a.click();
+
+            document.body.removeChild(a);
+
+            return false;
+          });
+
+          this.el.largepreview.addEventListener('click', e => {
+            
+            //Switch display mode:
+            if (FullMolinBkg == false) {
+              FullMolinBkg = true;
+            } else {
+              FullMolinBkg = false;
+              //HIDE BIG CANVAS IN BACKGROUND:
+              document.getElementById("overlay-structure-container").style.visibility = "hidden";
+            }
+          });
+        }
+
+        setTipContent__() {
+          this.sd.draw(this.currentPoint.label, this.thumbnailFixed ? 'svg' : 'img', "light", element => {
+            this.el.tipText.innerHTML = '';
+            if (this.currentPoint.titleIndex !== this.currentPoint.labelIndex)
+              this.el.tipText.innerHTML = `${this.currentPoint.fullLabel[this.currentPoint.titleIndex]}<br />`;
+            this.el.tipText.appendChild(element);
+            this.el.tip.style.borderColor = this.currentPoint.color;
+            document.getElementById("tip").style.visibility = "visible";
+          });
+        }
+
+        setTipContent() {
+          this.sd.draw(this.currentPoint.label, "#overlay-structure", "dark");
+          document.getElementById("tip").style.visibility = "hidden";
+        }
+
+        setSelectedContent(fullLabel, labelIndex, selectedLabels, img) {
+          this.el.selectedContainer.innerHTML = '';
+          if (img)
+            this.el.selectedContainer.appendChild(img);
+
+          fullLabel.forEach((l, i) => {
+            if (i === labelIndex) return;
+            if (selectedLabels && selectedLabels[i]) {
+              this.el.selectedContainer.appendChild(
+                Faerun.createElement('div', { classes: 'label', content: selectedLabels[i] })
+              );
+            }
+            this.el.selectedContainer.appendChild(
+              Faerun.createElement('div', { classes: 'content', content: l })
+            );
+          });
+
+          // Update the indicator
+          this.updateSelectedIndicators();
+        }
+
+        renderLegend() {
+          if (!this.legend.show) return;
+
+          
+          let legend = document.getElementById('legend');
+          
+          if (legend) this.body.removeChild(legend);
+
+          legend = Faerun.createElement('div', { id: 'legend' });
+          this.body.appendChild(legend)
+          
+          if (this.legend.title && this.legend.title !== '')
+            legend.appendChild(Faerun.createElement('h2', { content: 'Legend' }));
+          
+          let container = Faerun.createElement('div', { classes: 'container' });
+          legend.appendChild(container);
+
+          this.scatterMeta.forEach(s => {
+            let index = this.seriesState[s.name];
+            if (s.has_legend) {
+              let legendSection = []
+              if (!s.is_range[index]) {
+                s.legend[index].forEach(v => {
+                  legendSection.push(Faerun.createElement('div', { classes: 'legend-element' }, [
+                    Faerun.createColorBox(v[0]),
+                    Faerun.createElement('div', { classes: 'legend-label', content: v[1] }),
+                  ]))
+                })
+              } else {
+                legendSection.push(Faerun.createElement('div', { classes: 'legend-element-range' }, [
+                  ...Faerun.createColorScale(s.legend[index]),
+                  Faerun.createElement('div', { 
+                    classes: 'legend-label max', 
+                    content: s.max_legend_label[index] 
+                  }),
+                  Faerun.createElement('div', {
+                    classes: 'legend-label min',
+                    content: s.min_legend_label[index] 
+                  })
+                ]))
+              }
+
+              let series = [];
+              for (var i = 0; i < s.series_title.length; i++) {
+                series.push(
+                  Faerun.createElement('option', { 
+                    value: i, 
+                    content: s.series_title[i], 
+                    selected: i === index
+                  })
+                );
+              }
+
+
+              let sectionHeader = Faerun.createElement(
+                'h3', { content: s.legend_title[index] }
+              );
+              sectionHeader.addEventListener('click', e => {
+                this.toggleLegendSection(s.name);
+              });
+
+              let seriesSelector = Faerun.createElement(
+                'select', 
+                { 
+                  id: `select-${s.name}`, 
+                  classes: 'series-selector',
+                  'data-name': s.name,
+                  hidden: s.series_title.length < 2,
+                }, 
+                [ ...series ]
+              );
+              seriesSelector.addEventListener('change', e => {
+                let value = document.getElementById(`select-${s.name}`).value;
+                this.changeSeries(value, s.name);
+              });
+
+
+              container.appendChild(
+                Faerun.createElement(
+                  'div', { id: `legend-${s.name}`, 
+                  classes: 'legend-section', 
+                  'data-name': `${s.name}` },
+                  [ sectionHeader, seriesSelector, ...legendSection ]
+                )
+              );
+            }
+          });
+        }
+
+        toggleLegendSection(name) {
+          let section = document.getElementById('legend-' + name);
+          let geometry = this.pointHelpers[this.phIndexMap[name]].geometry;
+          let isVisible = geometry.isVisible;
+
+          if (isVisible) {
+            geometry.hide();
+            section.style.opacity = 0.5;
+          } else {
+            geometry.show();
+            section.style.opacity = 1.0;
+          }
+        }
+
+        getSelectedIndex(source, index) {
+          let selectedIndex = null;
+          this.selectedItems.forEach((item, i) => {
+            if (item.source == source && item.item.index == index) {
+              selectedIndex = i;
+              return;
+            }
+          });
+          return selectedIndex;
+        }
+
+        updateSelected(current = -1) {
+          let n = this.selectedItems.length
+          // Hide the container if no items are selected
+          if (n === 0) {
+            this.el.selected.style.display = 'none';
+            return;
+          } else {
+            this.el.selected.style.display = 'block';
+          }
+
+          if (current < 0) current = n - 1;
+          if (current >= n) current = 0;
+          this.selectedCurrent = current;
+
+          let item = this.selectedItems[current];
+
+          let phIndex = this.ohIndexToPhIndex[item.source];
+          let meta = this.scatterMeta[phIndex];
+          let phName = this.ohIndexToPhName[item.source];
+          let seriesState = this.seriesState[phName];
+
+          let fullLabel = data[phName].labels[item.item.index].split('__');
+
+          let labelIndex = meta.label_index[seriesState];
+          let titleIndex = meta.title_index[seriesState];
+          let selectedLabels = meta.selected_labels[seriesState];
+
+          this.sdSelected.draw(fullLabel[labelIndex], 'img', 'dark', img => {
+            this.el.selectedCurrent.innerHTML = current + 1;
+            this.el.selectedTotal.innerHTML = n;
+            this.el.selectedTitle.innerHTML = fullLabel[titleIndex];
+
+            this.setSelectedContent(fullLabel, labelIndex, selectedLabels, img);
+          });
+
+          // Remove all indicators
+          this.selectedIndicators.forEach(indicator => {
+            indicator.element.parentElement.removeChild(indicator.element);
+          });
+          this.selectedIndicators.length = 0;
+
+          // Add the indicator for this object
+          let indicatorElement = Faerun.createElement(
+            'div', 
+            { classes: 'selected-indicator' },
+            [
+              Faerun.createElement('div', { classes: 'crosshair-x' }),
+              Faerun.createElement('div', { classes: 'crosshair-y' })
+            ]
+          );
+
+          this.body.appendChild(indicatorElement);
+          this.selectedIndicators.push({
+            element: indicatorElement,
+            index: item.item.index,
+            ohIndex: item.source,
+            phIndex: phIndex
+          });
+          this.updateSelectedIndicators();
+        }
+
+        updateSelectedIndicators() {
+          this.selectedIndicators.forEach(indicator => {
+            let pointSize = this.pointHelpers[indicator.phIndex].getPointSize();
+            let screenPosition = this.octreeHelpers[indicator.ohIndex]
+                                     .getScreenPosition(indicator.index);
+            
+            // Make the crosshairs larger than the point
+            pointSize = Faerun.getMax([pointSize / window.devicePixelRatio, 10 / window.devicePixelRatio]);
+            pointSize *= 1.25;
+            let halfPointSize = pointSize / 2.0;
+            indicator.element.style.left = (screenPosition[0] - halfPointSize) + 'px';
+            indicator.element.style.top = (screenPosition[1] - halfPointSize) + 'px';
+            indicator.element.style.width = pointSize + 'px';
+            indicator.element.style.height = pointSize + 'px';
+          });
+        }
+
+        updateTitle(first = false) {
+          if (this.el.title === undefined) return;
+
+          let bb = this.el.title.getBoundingClientRect();
+          let scenePosition = new Lore.Math.Vector3f(
+            (this.min[0] + this.min[0]) / 2.0, this.min[1], 
+            (this.min[2] + this.min[2]) / 2.0
+          );
+
+          let screenPosition = this.lore.controls.camera.sceneToScreen(scenePosition, this.lore);
+          
+          this.el.title.style.left = (screenPosition[0] - (bb.width / 2.0)) + 'px';
+          this.el.title.style.top = (screenPosition[1] - bb.height) + 'px';
+
+          if (first) this.el.title.classList.add('show');
+        }
+
+        updateXAxis(first = false) {
+          if (this.el.xAxis === undefined) return;
+          
+          let bb = this.el.xAxis.getBoundingClientRect();
+          let scenePosition = new Lore.Math.Vector3f(
+            (this.min[0] + this.min[0]) / 2.0, this.min[1], 
+            (this.min[2] + this.min[2]) / 2.0
+          );
+
+          let screenPosition = this.lore.controls.camera.sceneToScreen(scenePosition, this.lore);
+          
+          this.el.xAxis.style.left = (screenPosition[0] - (bb.width / 2.0)) + 'px';
+          this.el.xAxis.style.top = (screenPosition[1]) + 'px';
+
+          if (first) this.el.xAxis.classList.add('show');
+        }
+
+        updateYAxis(first = false) {
+          if (this.el.yAxis === undefined) return;
+            
+          let bb = this.el.yAxis.getBoundingClientRect();
+          let scenePosition = new Lore.Math.Vector3f(
+            this.min[0], (this.min[1] + this.min[1]) / 2.0, 
+            (this.min[2] + this.min[2]) / 2.0
+          );
+          
+          let screenPosition = this.lore.controls.camera.sceneToScreen(scenePosition, this.lore);
+          
+          this.el.yAxis.style.left = (screenPosition[0] - bb.height) + 'px';
+          this.el.yAxis.style.top = (screenPosition[1] - bb.width / 2.0) + 'px';
+
+          if (first) this.el.yAxis.classList.add('show');
+        }
+
+        changeSeries(value, name) {
+          value = parseInt(value);
+          this.seriesState[name] = value;
+          this.renderLegend();
+
+          this.pointHelpers[this.phIndexMap[name]].setRGBFromArrays(
+            data[name]['colors'][value].r, 
+            data[name]['colors'][value].g, 
+            data[name]['colors'][value].b
+          );
+
+          if (data[name]['s']) {
+            if (data[name]['s'][value]) {
+              this.pointHelpers[this.phIndexMap[name]].setSize(
+                data[name]['s'][value]
+              );
+            } else {
+              this.pointHelpers[this.phIndexMap[name]].setSize(1.0);
+            }
+          }
+        }
+
+        search(term) {
+          let results = {}
+          let re = new RegExp(term, 'i');
+
+          Object.keys(data).forEach(name => {
+            if (!('labels' in data[name])) return;
+            results[name] = []
+            data[name]['labels'].forEach((label, i) => {
+              if (re.test(label))
+                results[name].push(i)
+            });
+          });
+
+          return results;
+        }
+
+        static createColorBox(value) {
+          return Faerun.createElement(
+            'div', 
+            { 
+              classes: 'color-box', 
+              style: `background-color: rgba(${value[0] * 255}, ${value[1] * 255 }, ${value[2] * 255 }, ${value[3] });
+                      border-color: rgba(${value[0] * 255 }, ${value[1] * 255 }, ${value[2] * 255 }, ${value[3] })`
+            }
+          );
+        }
+
+        static createColorScale(values) {
+          let scale = [];
+
+          values.forEach(value => {
+            scale.push(
+              Faerun.createElement(
+                'div', 
+                { 
+                  classes: 'color-stripe', 
+                  style: `background-color: rgba(${value[0][0] * 255}, ${value[0][1] * 255}, ${value[0][2] * 255}, ${value[0][3]});
+                          border-color: rgba(${value[0][0] * 255}, ${value[0][1] * 255}, ${value[0][2] * 255}, ${value[0][3]})`,
+                  alt: value[1]
+                }
+              ),
+            )
+          });
+
+          return scale;
+        }
+        
+        static createElement(tag, values = {}, children = []) {
+          let element = document.createElement(tag);
+
+          for (const key of Object.keys(values)) {
+            if (key === 'classes')
+              element.classList.add(...values[key].split(' '));
+            else if (key === 'content')
+              element.innerHTML = values[key];
+            else if (key === 'hidden') {
+              if (values[key])
+                element.setAttribute('hidden', true);
+            }
+            else if (key === 'selected') {
+              if (values[key])
+                element.setAttribute('selected', true);
+            }
+            else
+              element.setAttribute(key, values[key]);
+          }
+
+          if (children) {
+            if (Array.isArray(children)) {
+              children.forEach(child => {
+                element.appendChild(child);
+              })
+            } else {
+              element.appendChild(children);
+            }
+          }
+
+          return element;
+        }
+
+        static bindElements() {
+          let result = {};
+          document.querySelectorAll('[data-bind]').forEach(e => {
+            result[e.getAttribute('data-bind')] = e;
+          });
+          return result;
+        }
+
+        static getMin(arr, other = Number.MAX_VALUE) {
+          let m = Number.MAX_VALUE;
+          for (var i = 0; i < arr.length; i++)
+              if (arr[i] < m) m = arr[i];
+          
+          if (m < other) return m;
+          return other;
+        }
+
+        static getMax(arr, other = -Number.MAX_VALUE) {
+          let m = -Number.MAX_VALUE;
+          for (var i = 0; i < arr.length; i++)
+              if (arr[i] > m) m = arr[i];
+          
+          if (m > other) return m;
+          return other;
+        }
+      }
+
+      let f = new Faerun();
+    </script>
+  </body>
+</html>
